@@ -26,9 +26,32 @@ export const UserModel = model("User",userSchema);
 
 const contentSchema = new Schema({
     title:String,
+    type:String,
     link:String,
     tags:[{type:mongoose.Schema.ObjectId,ref:"Tag"}],
+    content:String,
     userId:{type:mongoose.Schema.ObjectId,ref:"User"}
 })
 
+
+
+
 export const contentModel= model("Contents",contentSchema)
+
+
+
+
+const tagSchema = new Schema({
+    title:{type:String, unique:true}
+})
+
+export const tagModel = model("Tags",tagSchema)
+
+
+
+const linkSchema = new Schema({
+    hash:String,
+    userId:{type:mongoose.Schema.ObjectId,ref:"User"}
+})
+
+export const linkModel = model("Links",linkSchema);

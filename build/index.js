@@ -81,16 +81,45 @@ app.post("/api/v1/signin", (req, res) => __awaiter(void 0, void 0, void 0, funct
         res.status(404).json({ message: "Could not sign in" });
     }
 }));
-app.post("api/vi/content", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+app.post("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const title = req.body.title;
     const link = req.body.link;
-    const tags = [...req.body.tags];
+    // const tags = [...req.body.tags]
     //@ts-ignore
     const userId = req.userId;
     try {
-        yield db_2.contentModel.create({ title, link, userId });
+        yield db_2.contentModel.create({
+            title,
+            link,
+            tags: [],
+            userId
+        });
+        res.status(200).json({ message: "Content Added" });
     }
     catch (err) {
+        res.status(403).json({ message: "Could not create" });
+    }
+}));
+app.get("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    //@ts-ignore
+    const userId = req.userId;
+    try {
+        const contents = yield db_2.contentModel.find({ userId: userId }).populate("userId", "username");
+        res.status(200).json({ contents });
+    }
+    catch (err) {
+        res.status(403).json({ message: "Could not get content" });
+    }
+}));
+app.delete("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    //@ts-ignore
+    const userId = req.userId;
+    const contentId = req.body.contentId;
+    try {
+        yield db_2.contentModel.deleteOne({ _id: contentId, userId: userId });
+    }
+    catch (err) {
+        res.status(403).json({ message: "Could not delete" });
     }
 }));
 app.listen(3003, () => {

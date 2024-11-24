@@ -64,10 +64,13 @@ app.post("/api/v1/signin",async (req,res)=>{
     }
 })
 
-app.post("api/vi/content",userMiddleware, async (req,res)=>{
+app.post("/api/v1/content",userMiddleware, async (req,res)=>{
     const title = req.body.title;
     const link = req.body.link;
-    const tags = [...req.body.tags]
+    const type = req.body.type;
+    const content = req.body.type;
+
+    // const tags = [...req.body.tags]
 
     //@ts-ignore
     const userId = req.userId;
@@ -87,6 +90,38 @@ app.post("api/vi/content",userMiddleware, async (req,res)=>{
 
     
 
+})
+
+app.get("/api/v1/content",userMiddleware,async (req,res)=>{
+    //@ts-ignore
+    const userId = req.userId;
+    try{
+        const contents = await contentModel.find({userId:userId}).populate("userId","username");
+
+        res.status(200).json({contents})
+    }catch(err){
+        res.status(403).json({message:"Could not get content"})
+    }
+
+    
+})
+
+app.delete("/api/v1/content",userMiddleware,async (req,res)=>{
+        //@ts-ignore
+        const userId = req.userId;
+        const contentId = req.body.contentId;
+
+
+        try{
+
+            await contentModel.deleteOne({_id:contentId,userId:userId})
+            res.status(200).json({message:"Delted Successfully!"})
+
+        }catch(err){
+            res.status(403).json({message:"Could not delete"})
+        }
+
+        
 })
 
 
