@@ -84,6 +84,8 @@ app.post("/api/v1/signin", (req, res) => __awaiter(void 0, void 0, void 0, funct
 app.post("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const title = req.body.title;
     const link = req.body.link;
+    const type = req.body.type;
+    const content = req.body.type;
     // const tags = [...req.body.tags]
     //@ts-ignore
     const userId = req.userId;
@@ -117,6 +119,7 @@ app.delete("/api/v1/content", middleware_1.userMiddleware, (req, res) => __await
     const contentId = req.body.contentId;
     try {
         yield db_2.contentModel.deleteOne({ _id: contentId, userId: userId });
+        res.status(200).json({ message: "Delted Successfully!" });
     }
     catch (err) {
         res.status(403).json({ message: "Could not delete" });

@@ -1,9 +1,12 @@
 import express from "express";
 import * as dotenv from "dotenv"
-import { UserModel } from "./db";
+import { linkModel, UserModel } from "./db";
 import jwt from "jsonwebtoken"
 import { contentModel } from "./db";
 import { userMiddleware } from "./middlewares/middleware";
+import { getDate } from "./utils/getDate";
+import { ListFormat } from "typescript";
+import { random } from "./utils/randomHash";
 const app = express()
 
 
@@ -80,6 +83,8 @@ app.post("/api/v1/content",userMiddleware, async (req,res)=>{
         title,
         link,
         tags:[],
+        content,
+        createdAt:getDate(),
         userId})
 
         res.status(200).json({message:"Content Added"})
@@ -124,7 +129,31 @@ app.delete("/api/v1/content",userMiddleware,async (req,res)=>{
         
 })
 
+app.post("/api/v1/brain/share",userMiddleware,async (req,res)=>{
+    const share = req.body.share;
+    //@ts-ignore
+    const userId = req.userId;
+    try{
+        if(share){
+            await linkModel.create({
+                hash:random(10),
+                userId:userId
+            })
+    
+            res.status(200).json({message:"Link generated"})
+        }
+        else{
+            await linkModel.deleteOne({
+                userId
+            })
+    
+            res.status(200).json({message:"Link deleted"})
+        }
+    }catch(err){
+        res.status(403).json({message:"Could not update Link"})
+    }
 
+})
 
 app.listen(3003,()=>{
     console.log("Server Running")

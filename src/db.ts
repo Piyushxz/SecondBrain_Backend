@@ -30,6 +30,7 @@ const contentSchema = new Schema({
     link:String,
     tags:[{type:mongoose.Schema.ObjectId,ref:"Tag"}],
     content:String,
+    createdAt:String,
     userId:{type:mongoose.Schema.ObjectId,ref:"User"}
 })
 
@@ -51,7 +52,7 @@ export const tagModel = model("Tags",tagSchema)
 
 const linkSchema = new Schema({
     hash:String,
-    userId:{type:mongoose.Schema.ObjectId,ref:"User"}
+    userId:{type:mongoose.Schema.ObjectId,ref:"User",required:true}
 })
 
 export const linkModel = model("Links",linkSchema);
