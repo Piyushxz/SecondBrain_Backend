@@ -41,6 +41,8 @@ const db_1 = require("./db");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const db_2 = require("./db");
 const middleware_1 = require("./middlewares/middleware");
+const getDate_1 = require("./utils/getDate");
+const randomHash_1 = require("./utils/randomHash");
 const app = (0, express_1.default)();
 dotenv.config();
 app.use(express_1.default.json());
@@ -94,6 +96,8 @@ app.post("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter
             title,
             link,
             tags: [],
+            content,
+            createdAt: (0, getDate_1.getDate)(),
             userId
         });
         res.status(200).json({ message: "Content Added" });
@@ -123,6 +127,55 @@ app.delete("/api/v1/content", middleware_1.userMiddleware, (req, res) => __await
     }
     catch (err) {
         res.status(403).json({ message: "Could not delete" });
+    }
+}));
+app.post("/api/v1/brain/share", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const share = req.body.share;
+    //@ts-ignore
+    const userId = req.userId;
+    try {
+        if (share) {
+            const hash = (0, randomHash_1.random)(10);
+            yield db_1.linkModel.create({
+                hash: hash,
+                userId: userId
+            });
+            res.status(200).json({ hash: hash, message: "Link generated" });
+        }
+        else {
+            yield db_1.linkModel.deleteOne({
+                userId
+            });
+            res.status(200).json({ message: "Link deleted" });
+        }
+    }
+    catch (err) {
+        res.status(403).json({ message: "Could not update Link" });
+    }
+}));
+app.get("/api/v1/brain/:shareLink", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const hash = req.params.shareLink;
+    try {
+        const link = yield db_1.linkModel.findOne({
+            hash: hash
+        });
+        if (!link) {
+            res.status(411).json({ message: "Incorrect Input" });
+            return;
+        }
+        const content = yield db_2.contentModel.find({
+            userId: link.userId
+        });
+        const user = yield db_1.UserModel.findOne({
+            _id: link.userId
+        });
+        res.status(200).json({
+            user: user === null || user === void 0 ? void 0 : user.username,
+            content: content
+        });
+    }
+    catch (err) {
+        res.status(403).json({ message: "Could not find " });
     }
 }));
 app.listen(3003, () => {

@@ -6,6 +6,7 @@ import { contentModel } from "./db";
 import { userMiddleware } from "./middlewares/middleware";
 import { getDate } from "./utils/getDate";
 import { ListFormat } from "typescript";
+import cors from "cors"
 import { random } from "./utils/randomHash";
 const app = express()
 
@@ -13,7 +14,7 @@ const app = express()
 
 
 dotenv.config()
-
+app.use(cors())
 app.use(express.json())
 
 
@@ -135,12 +136,13 @@ app.post("/api/v1/brain/share",userMiddleware,async (req,res)=>{
     const userId = req.userId;
     try{
         if(share){
+            const hash = random(10)
             await linkModel.create({
-                hash:random(10),
+                hash:hash,
                 userId:userId
             })
     
-            res.status(200).json({message:"Link generated"})
+            res.status(200).json({hash:hash, message:"Link generated"})
         }
         else{
             await linkModel.deleteOne({
@@ -153,6 +155,45 @@ app.post("/api/v1/brain/share",userMiddleware,async (req,res)=>{
         res.status(403).json({message:"Could not update Link"})
     }
 
+})
+
+app.get("/api/v1/brain/:shareLink",async (req,res)=>{
+
+    const hash = req.params.shareLink;
+
+    try{
+
+        const link = await linkModel.findOne({
+            hash:hash
+        })
+
+
+        if(!link){
+            res.status(411).json({message:"Incorrect Input"}
+            )
+            return;
+        }
+
+
+        const content = await contentModel.find({
+            
+            userId:link.userId
+        })
+
+        const user = await UserModel.findOne({
+            _id:link.userId
+        })
+
+
+        res.status(200).json({
+            user:user?.username,
+            content:content
+        })
+
+
+    }catch(err){
+        res.status(403).json({message:"Could not find "})
+    }
 })
 
 app.listen(3003,()=>{

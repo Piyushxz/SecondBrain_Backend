@@ -40,6 +40,7 @@ const contentSchema = new mongoose_2.Schema({
     link: String,
     tags: [{ type: mongoose_1.default.Schema.ObjectId, ref: "Tag" }],
     content: String,
+    createdAt: String,
     userId: { type: mongoose_1.default.Schema.ObjectId, ref: "User" }
 });
 exports.contentModel = (0, mongoose_2.model)("Contents", contentSchema);
@@ -49,6 +50,6 @@ const tagSchema = new mongoose_2.Schema({
 exports.tagModel = (0, mongoose_2.model)("Tags", tagSchema);
 const linkSchema = new mongoose_2.Schema({
     hash: String,
-    userId: { type: mongoose_1.default.Schema.ObjectId, ref: "User" }
+    userId: { type: mongoose_1.default.Schema.ObjectId, ref: "User", required: true }
 });
 exports.linkModel = (0, mongoose_2.model)("Links", linkSchema);
