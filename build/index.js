@@ -42,18 +42,30 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const db_2 = require("./db");
 const middleware_1 = require("./middlewares/middleware");
 const getDate_1 = require("./utils/getDate");
+const zod_1 = require("zod");
+const cors_1 = __importDefault(require("cors"));
 const randomHash_1 = require("./utils/randomHash");
 const app = (0, express_1.default)();
 dotenv.config();
+app.use((0, cors_1.default)());
 app.use(express_1.default.json());
 app.get("/", (req, res) => {
     console.log("ROUTE HIT");
     res.send("Hey");
 });
 app.post("/api/v1/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const username = req.body.username;
-    const password = req.body.password;
+    const requiredBody = zod_1.z.object({
+        email: zod_1.z.string().min(11).max(50).email(),
+        username: zod_1.z.string().min(5).max(15),
+        password: zod_1.z.string().min(5).max(50)
+    });
     try {
+        const parsedBody = requiredBody.safeParse(req.body);
+        if (!parsedBody.success) {
+            res.status(400).json({ message: "Invalid Format" });
+            return;
+        }
+        const { email, username, password } = parsedBody.data;
         let user = yield db_1.UserModel.findOne({ username });
         if (user) {
             res.status(409).json({ message: "User Already exists" });

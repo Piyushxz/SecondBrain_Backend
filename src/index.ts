@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken"
 import { contentModel } from "./db";
 import { userMiddleware } from "./middlewares/middleware";
 import { getDate } from "./utils/getDate";
-import { ListFormat } from "typescript";
+import {z} from "zod"
 import cors from "cors"
 import { random } from "./utils/randomHash";
 const app = express()
@@ -24,12 +24,22 @@ app.get("/",(req,res)=>{
 })
 app.post("/api/v1/signup",async (req,res)=>{
 
-    const username = req.body.username;
-    const password = req.body.password;
 
+    const requiredBody = z.object({
+        email:z.string().min(11).max(50).email(),
+        username:z.string().min(5).max(15),
+        password:z.string().min(5).max(50)
+    })
 
     try{
 
+        const parsedBody = requiredBody.safeParse(req.body)
+
+        if(!parsedBody.success){
+            res.status(400).json({message:"Invalid Format"})
+            return;
+        }
+        const {email,username,password} = parsedBody.data
         let user =await UserModel.findOne({username})
         if(user){
             res.status(409).json({message:"User Already exists"})
