@@ -44,6 +44,7 @@ const middleware_1 = require("./middlewares/middleware");
 const getDate_1 = require("./utils/getDate");
 const zod_1 = require("zod");
 const cors_1 = __importDefault(require("cors"));
+const bcrypt_1 = __importDefault(require("bcrypt"));
 const randomHash_1 = require("./utils/randomHash");
 const app = (0, express_1.default)();
 dotenv.config();
@@ -66,12 +67,13 @@ app.post("/api/v1/signup", (req, res) => __awaiter(void 0, void 0, void 0, funct
             return;
         }
         const { email, username, password } = parsedBody.data;
+        const hashedPassword = yield bcrypt_1.default.hash(password, 2);
         let user = yield db_1.UserModel.findOne({ username });
         if (user) {
             res.status(409).json({ message: "User Already exists" });
             return;
         }
-        yield db_1.UserModel.create({ username, password });
+        yield db_1.UserModel.create({ username, password: hashedPassword });
         res.status(200).json({ message: "User created" });
     }
     catch (err) {
@@ -83,13 +85,20 @@ app.post("/api/v1/signin", (req, res) => __awaiter(void 0, void 0, void 0, funct
     const password = req.body.password;
     let foundUser = null;
     try {
-        foundUser = yield db_1.UserModel.findOne({ username, password });
-        if (foundUser == null) {
-            res.status(401).json({ message: "Invalid Credentials" });
+        foundUser = yield db_1.UserModel.findOne({ username });
+        if (!foundUser) {
+            res.status(401).json({ message: "User does not exist" });
             return;
         }
-        const token = jsonwebtoken_1.default.sign({ id: foundUser._id }, process.env.SECRET_KEY);
-        res.status(200).json({ message: "Signed IN!", token });
+        //@ts-ignore
+        const encryptedPass = yield bcrypt_1.default.compare(password, foundUser.password);
+        if (encryptedPass) {
+            const token = jsonwebtoken_1.default.sign({ id: foundUser._id }, process.env.SECRET_KEY);
+            res.status(200).json({ message: "Signed IN!", token });
+        }
+        else {
+            res.status(403).json({ message: "Invalid credentials" });
+        }
     }
     catch (err) {
         res.status(404).json({ message: "Could not sign in" });

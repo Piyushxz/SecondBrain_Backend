@@ -7,6 +7,7 @@ import { userMiddleware } from "./middlewares/middleware";
 import { getDate } from "./utils/getDate";
 import {z} from "zod"
 import cors from "cors"
+import bcrypt from "bcrypt"
 import { random } from "./utils/randomHash";
 const app = express()
 
@@ -40,13 +41,14 @@ app.post("/api/v1/signup",async (req,res)=>{
             return;
         }
         const {email,username,password} = parsedBody.data
+        const hashedPassword = await bcrypt.hash(password,2)
         let user =await UserModel.findOne({username})
         if(user){
             res.status(409).json({message:"User Already exists"})
             return
         }
 
-        await UserModel.create({username,password});
+        await UserModel.create({username,password:hashedPassword});
         res.status(200).json({message:"User created"})
 
     }catch(err){
@@ -58,19 +60,27 @@ app.post("/api/v1/signin",async (req,res)=>{
     const username = req.body.username;
     const password = req.body.password;
 
+   
     let foundUser = null;
     try{
-        foundUser = await UserModel.findOne({username,password})
+        foundUser = await UserModel.findOne({username})
 
-        if(foundUser==null){
-            res.status(401).json({message:"Invalid Credentials"})
+        if(!foundUser){
+            res.status(401).json({message:"User does not exist"})
             return;
         }
+        //@ts-ignore
+        const encryptedPass = await bcrypt.compare(password,foundUser.password)
+        if(encryptedPass){
+            const token = jwt.sign({id:foundUser._id},process.env.SECRET_KEY);
+            res.status(200).json({message:"Signed IN!",token})
+            
+        }else{
 
-        
-        const token = jwt.sign({id:foundUser._id},process.env.SECRET_KEY);
-        res.status(200).json({message:"Signed IN!",token})
-        
+            res.status(403).json({message:"Invalid credentials"})
+        }
+
+    
 
 
     }catch(err){
