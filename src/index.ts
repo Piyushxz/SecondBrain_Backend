@@ -92,7 +92,7 @@ app.post("/api/v1/content",userMiddleware, async (req,res)=>{
     const title = req.body.title;
     const link = req.body.link;
     const type = req.body.type;
-    const content = req.body.type;
+    const content = req.body.content;
 
     // const tags = [...req.body.tags]
 

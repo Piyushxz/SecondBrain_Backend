@@ -108,7 +108,7 @@ app.post("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter
     const title = req.body.title;
     const link = req.body.link;
     const type = req.body.type;
-    const content = req.body.type;
+    const content = req.body.content;
     // const tags = [...req.body.tags]
     //@ts-ignore
     const userId = req.userId;
@@ -116,6 +116,7 @@ app.post("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter
         yield db_2.contentModel.create({
             title,
             link,
+            type,
             tags: [],
             content,
             createdAt: (0, getDate_1.getDate)(),
