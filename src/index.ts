@@ -103,6 +103,7 @@ app.post("/api/v1/content",userMiddleware, async (req,res)=>{
         await contentModel.create({
         title,
         link,
+        type,
         tags:[],
         content,
         createdAt:getDate(),
