@@ -101,7 +101,7 @@ app.post("/api/v1/signin", (req, res) => __awaiter(void 0, void 0, void 0, funct
         }
     }
     catch (err) {
-        res.status(404).json({ message: "Could not sign in" });
+        res.status(404).json({ message: "Could not sign in", error: err });
     }
 }));
 app.post("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -109,7 +109,7 @@ app.post("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter
     const link = req.body.link;
     const type = req.body.type;
     const content = req.body.content;
-    // const tags = [...req.body.tags]
+    const tags = [...req.body.tags];
     //@ts-ignore
     const userId = req.userId;
     try {
@@ -117,7 +117,7 @@ app.post("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter
             title,
             link,
             type,
-            tags: [],
+            tags: [...tags],
             content,
             createdAt: (0, getDate_1.getDate)(),
             userId

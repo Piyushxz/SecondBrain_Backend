@@ -29,6 +29,7 @@ const contentSchema = new Schema({
     type:String,
     link:String,
     tags:[{type:mongoose.Schema.ObjectId,ref:"Tag"}],
+    
     content:String,
     createdAt:String,
     userId:{type:mongoose.Schema.ObjectId,ref:"User"}

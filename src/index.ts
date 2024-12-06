@@ -84,7 +84,7 @@ app.post("/api/v1/signin",async (req,res)=>{
 
 
     }catch(err){
-        res.status(404).json({message:"Could not sign in"})
+        res.status(404).json({message:"Could not sign in",error:err},)
     }
 })
 
@@ -94,7 +94,7 @@ app.post("/api/v1/content",userMiddleware, async (req,res)=>{
     const type = req.body.type;
     const content = req.body.content;
 
-    // const tags = [...req.body.tags]
+     const tags = [...req.body.tags]
 
     //@ts-ignore
     const userId = req.userId;
@@ -104,7 +104,7 @@ app.post("/api/v1/content",userMiddleware, async (req,res)=>{
         title,
         link,
         type,
-        tags:[],
+        tags:[...tags],
         content,
         createdAt:getDate(),
         userId})
