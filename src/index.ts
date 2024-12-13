@@ -93,7 +93,7 @@ app.post("/api/v1/content",userMiddleware, async (req,res)=>{
     const link = req.body.link;
     const type = req.body.type;
     const content = req.body.content;
-
+    const text = req.body.text
      const tags = [...req.body.tags]
 
     //@ts-ignore
@@ -106,6 +106,7 @@ app.post("/api/v1/content",userMiddleware, async (req,res)=>{
         type,
         tags:[...tags],
         content,
+        text,
         createdAt:getDate(),
         userId})
 

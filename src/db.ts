@@ -28,7 +28,8 @@ const contentSchema = new Schema({
     title:String,
     type:String,
     link:String,
-    tags:[{type:mongoose.Schema.ObjectId,ref:"Tag"}],
+    tags:[String],
+    // tags:[{type:mongoose.Schema.ObjectId,ref:"Tag"}],
     
     content:String,
     createdAt:String,

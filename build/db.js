@@ -38,8 +38,8 @@ const contentSchema = new mongoose_2.Schema({
     title: String,
     type: String,
     link: String,
-    // tags:[{type:mongoose.Schema.ObjectId,ref:"Tag"}],
     tags: [String],
+    // tags:[{type:mongoose.Schema.ObjectId,ref:"Tag"}],
     content: String,
     createdAt: String,
     userId: { type: mongoose_1.default.Schema.ObjectId, ref: "User" }
