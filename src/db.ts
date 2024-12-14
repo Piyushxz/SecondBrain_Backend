@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { Schema,Model,model } from "mongoose";
 import dotenv from "dotenv"
+import { text } from "express";
 
 dotenv.config()
 async function connectDB() {
@@ -29,6 +30,7 @@ const contentSchema = new Schema({
     type:String,
     link:String,
     tags:[String],
+    
     // tags:[{type:mongoose.Schema.ObjectId,ref:"Tag"}],
     
     content:String,

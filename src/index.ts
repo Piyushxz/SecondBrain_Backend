@@ -93,7 +93,7 @@ app.post("/api/v1/content",userMiddleware, async (req,res)=>{
     const link = req.body.link;
     const type = req.body.type;
     const content = req.body.content;
-    const text = req.body.text
+    
      const tags = [...req.body.tags]
 
     //@ts-ignore
@@ -106,7 +106,7 @@ app.post("/api/v1/content",userMiddleware, async (req,res)=>{
         type,
         tags:[...tags],
         content,
-        text,
+        
         createdAt:getDate(),
         userId})
 
@@ -134,6 +134,19 @@ app.get("/api/v1/content",userMiddleware,async (req,res)=>{
     
 })
 
+app.get("/api/v1/content/:type",userMiddleware,async(req,res)=>{
+        //@ts-ignore
+        const userId = req.userId;
+        const type = req.params.type
+        try{
+            const contents = await contentModel.find({userId:userId,type:type}).populate("userId","username");
+    
+            res.status(200).json({contents})
+        }catch(err){
+            res.status(403).json({message:"Could not get content"})
+        }
+
+})
 app.delete("/api/v1/content",userMiddleware,async (req,res)=>{
         //@ts-ignore
         const userId = req.userId;

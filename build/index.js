@@ -139,6 +139,18 @@ app.get("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter(
         res.status(403).json({ message: "Could not get content" });
     }
 }));
+app.get("/api/v1/content/:type", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    //@ts-ignore
+    const userId = req.userId;
+    const type = req.params.type;
+    try {
+        const contents = yield db_2.contentModel.find({ userId: userId, type: type }).populate("userId", "username");
+        res.status(200).json({ contents });
+    }
+    catch (err) {
+        res.status(403).json({ message: "Could not get content" });
+    }
+}));
 app.delete("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //@ts-ignore
     const userId = req.userId;
