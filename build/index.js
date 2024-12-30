@@ -128,7 +128,7 @@ app.post("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter
         res.status(403).json({ message: "Could not create" });
     }
 }));
-app.get("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+app.get("/api/v1/content/home", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //@ts-ignore
     const userId = req.userId;
     try {
