@@ -48,15 +48,16 @@ const bcrypt_1 = __importDefault(require("bcrypt"));
 const randomHash_1 = require("./utils/randomHash");
 const js_client_rest_1 = require("@qdrant/js-client-rest");
 const generative_ai_1 = require("@google/generative-ai");
-const genAI = new generative_ai_1.GoogleGenerativeAI("AIzaSyAfZ9ZsKbR9B_ySMpG6cO97FZfQXlLyPPs");
+const genAI = new generative_ai_1.GoogleGenerativeAI(process.env.GEMINI_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 const app = (0, express_1.default)();
 dotenv.config();
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
+console.log(process.env.GEMINI_KEY, process.env.QDRANT_KEY);
 const client = new js_client_rest_1.QdrantClient({
-    url: 'https://bfc37c83-e8a5-48e5-a0c7-c31ffb4ba691.us-east4-0.gcp.cloud.qdrant.io:6333',
-    apiKey: 'BQ23kUW_o8kCFvsbd8e7PKNpJs0lJu18V322TDpWq6OWd9q5dAlCsg',
+    url: process.env.QDRANT_URL,
+    apiKey: process.env.QDRANT_KEY,
 });
 const connectVectorDB = () => __awaiter(void 0, void 0, void 0, function* () {
     try {

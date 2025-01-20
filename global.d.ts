@@ -4,7 +4,8 @@ namespace NodeJS {
       PORT: string;
       MONGO_URI: string;
       GEMINI_KEY:string,
-      QDRANT_KEY:string
+      QDRANT_KEY:string,
+      QDRANT_URL:string
     }
   }
   

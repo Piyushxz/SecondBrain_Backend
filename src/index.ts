@@ -23,10 +23,10 @@ const app = express()
 dotenv.config()
 app.use(cors())
 app.use(express.json())
-
+console.log(process.env.GEMINI_KEY,process.env.QDRANT_KEY)
 const client = new QdrantClient({
-    url: process.env.QDRANT_KEY,
-    apiKey: process.env.QDRANT_KEY
+    url: process.env.QDRANT_URL,
+    apiKey: process.env.QDRANT_KEY,
 });
 
 const connectVectorDB = async()=>{
