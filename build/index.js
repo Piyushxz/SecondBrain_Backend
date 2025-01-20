@@ -46,10 +46,95 @@ const zod_1 = require("zod");
 const cors_1 = __importDefault(require("cors"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const randomHash_1 = require("./utils/randomHash");
+const js_client_rest_1 = require("@qdrant/js-client-rest");
+const generative_ai_1 = require("@google/generative-ai");
+const genAI = new generative_ai_1.GoogleGenerativeAI("AIzaSyAfZ9ZsKbR9B_ySMpG6cO97FZfQXlLyPPs");
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 const app = (0, express_1.default)();
 dotenv.config();
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
+const client = new js_client_rest_1.QdrantClient({
+    url: 'https://bfc37c83-e8a5-48e5-a0c7-c31ffb4ba691.us-east4-0.gcp.cloud.qdrant.io:6333',
+    apiKey: 'BQ23kUW_o8kCFvsbd8e7PKNpJs0lJu18V322TDpWq6OWd9q5dAlCsg',
+});
+const connectVectorDB = () => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const result = yield client.getCollections();
+        console.log('List of collections:', result.collections);
+    }
+    catch (err) {
+        console.error('Could not get collections:', err);
+    }
+});
+connectVectorDB();
+const createCollection = () => __awaiter(void 0, void 0, void 0, function* () {
+    const collectionName = 'test_collection';
+    const response = yield client.getCollections();
+    const collectionNames = response.collections.map((collection) => collection.name);
+    if (collectionNames.includes(collectionName)) {
+        yield client.deleteCollection(collectionName);
+    }
+    yield client.createCollection(collectionName, {
+        vectors: {
+            size: 768,
+            distance: 'Cosine',
+        },
+        optimizers_config: {
+            default_segment_number: 2,
+        },
+        replication_factor: 2,
+    });
+    console.log('collection created');
+});
+const insertDB = (link) => __awaiter(void 0, void 0, void 0, function* () {
+    // Use text-embedding-004 model for generating embeddings
+    const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
+    try {
+        // Generate embedding for the link content
+        const result = yield model.embedContent([link.content, link.url]);
+        // Create the point data for insertion
+        const point = {
+            id: link._id,
+            vector: result.embedding.values,
+            payload: {
+                content: link.content,
+                url: link.url,
+                type: link.type, // e.g., "tweet" or "YouTube"
+            },
+        };
+        // Upsert the point into the collection
+        yield client.upsert('test_collection', {
+            wait: true,
+            points: [point], // Pass the point as an array
+        });
+        console.log("Insert into QdrantDB");
+    }
+    catch (error) {
+        console.error("Error generating embedding or inserting into database:", error);
+        throw error;
+    }
+});
+const searchDB = (query) => __awaiter(void 0, void 0, void 0, function* () {
+    // Initialize Gemini AI with API key from environment variables
+    // Use text-embedding-004 model for generating embeddings
+    const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
+    try {
+        // Generate embedding for the query
+        const result = yield model.embedContent(query);
+        // Perform vector search in the database
+        const results = yield client.search('test_collection', {
+            vector: result.embedding.values,
+            top: 5, // Retrieve top 5 similar results
+        });
+        // Return the payload of the search results
+        return results.map(result => result.payload);
+    }
+    catch (error) {
+        console.error("Error generating embedding or searching database:", error);
+        throw error;
+    }
+});
 app.get("/", (req, res) => {
     console.log("ROUTE HIT");
     res.send("Hey");
@@ -122,6 +207,7 @@ app.post("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter
             createdAt: (0, getDate_1.getDate)(),
             userId
         });
+        yield insertDB({ _id: parseInt(userId), content: title, url: link, type: type });
         res.status(200).json({ message: "Content Added" });
     }
     catch (err) {

@@ -9,6 +9,12 @@ import {z} from "zod"
 import cors from "cors"
 import bcrypt from "bcrypt"
 import { random } from "./utils/randomHash";
+import {QdrantClient} from '@qdrant/js-client-rest'
+import { GoogleGenerativeAI } from "@google/generative-ai";
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+
 const app = express()
 
 
@@ -17,6 +23,119 @@ const app = express()
 dotenv.config()
 app.use(cors())
 app.use(express.json())
+
+const client = new QdrantClient({
+    url: process.env.QDRANT_KEY,
+    apiKey: 'BQ23kUW_o8kCFvsbd8e7PKNpJs0lJu18V322TDpWq6OWd9q5dAlCsg',
+});
+
+const connectVectorDB = async()=>{
+    try {
+        const result = await client.getCollections();
+        console.log('List of collections:', result.collections);
+    } catch (err) {
+        console.error('Could not get collections:', err);
+    }
+}
+connectVectorDB()
+
+ const createCollection = async()=>{
+    const collectionName = 'test_collection';
+
+   const response = await client.getCollections();
+
+    const collectionNames = response.collections.map((collection) => collection.name);
+
+    if (collectionNames.includes(collectionName)) {
+         await client.deleteCollection(collectionName);
+    }
+
+     await client.createCollection(collectionName, {
+        vectors: {
+            size: 768,
+             distance: 'Cosine',
+         },
+        optimizers_config: {
+             default_segment_number: 2,
+         },
+         replication_factor: 2,
+     });
+    console.log('collection created')
+ }
+
+// createCollection()
+
+interface Link {
+    _id:any,
+    url:string,
+    type:string,
+    description?:string,
+    content:string
+}
+const insertDB = async (link: Link) => {
+    // Use text-embedding-004 model for generating embeddings
+    const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
+
+    try {
+        // Generate embedding for the link content
+        const result = await model.embedContent([link.content,link.url]);
+        
+        // Create the point data for insertion
+        const point = {
+            id: link._id,
+            vector: result.embedding.values,
+            payload: {
+                content:link.content,
+                url: link.url,
+                type: link.type, // e.g., "tweet" or "YouTube"
+            },
+        };
+
+        // Upsert the point into the collection
+        await client.upsert('test_collection', {
+            wait: true,
+            points: [point], // Pass the point as an array
+        });
+        console.log("Insert into QdrantDB")
+
+    
+    } catch (error) {
+
+        console.error("Error generating embedding or inserting into database:", error);
+        throw error;
+    }
+};
+
+interface SearchConfig {
+    shard_key?: string | number | (string | number)[];
+    vector: number[];
+    [key: string]: any; // Allows any additional properties
+}
+
+
+const searchDB = async (query:string) => {
+    
+    // Initialize Gemini AI with API key from environment variables
+    // Use text-embedding-004 model for generating embeddings
+    const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
+
+    try {
+        // Generate embedding for the query
+        const result = await model.embedContent(query);
+        
+        // Perform vector search in the database
+        const results = await client.search('test_collection', {
+            vector: result.embedding.values,
+            top: 5, // Retrieve top 5 similar results
+        }as SearchConfig);
+
+        // Return the payload of the search results
+        return results.map(result => result.payload);
+    } catch (error) {
+        console.error("Error generating embedding or searching database:", error);
+        throw error;
+    }
+};
 
 
 app.get("/",(req,res)=>{
@@ -110,7 +229,9 @@ app.post("/api/v1/content",userMiddleware, async (req,res)=>{
         createdAt:getDate(),
         userId})
 
+        await insertDB({_id:parseInt(userId),content:title,url:link,type:type})
         res.status(200).json({message:"Content Added"})
+
     }catch(err){
 
         res.status(403).json({message:"Could not create"})

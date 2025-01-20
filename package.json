@@ -13,6 +13,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "@qdrant/js-client-rest": "^1.13.0",
     "@types/bcrypt": "^5.0.2",
     "@types/jsonwebtoken": "^9.0.7",
     "bcrypt": "^5.1.1",
@@ -21,6 +23,7 @@
     "express": "^4.21.1",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.8.1",
+    "openai": "^4.79.1",
     "typescript": "^5.6.3",
     "zod": "^3.23.8"
   },
