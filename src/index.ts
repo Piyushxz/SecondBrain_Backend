@@ -26,7 +26,7 @@ app.use(express.json())
 
 const client = new QdrantClient({
     url: process.env.QDRANT_KEY,
-    apiKey: 'BQ23kUW_o8kCFvsbd8e7PKNpJs0lJu18V322TDpWq6OWd9q5dAlCsg',
+    apiKey: process.env.QDRANT_KEY
 });
 
 const connectVectorDB = async()=>{
