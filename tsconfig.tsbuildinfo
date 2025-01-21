@@ -1,1 +1,1 @@
-{"root":["./global.d.ts","./src/db.ts","./src/index.ts","./src/middlewares/middleware.ts","./src/utils/getdate.ts","./src/utils/randomhash.ts"],"version":"5.6.3"}
+{"root":["./global.d.ts","./src/db.ts","./src/index.ts","./src/middlewares/middleware.ts","./src/routes/v2/index.ts","./src/utils/getdate.ts","./src/utils/randomhash.ts"],"version":"5.6.3"}

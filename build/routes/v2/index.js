@@ -1,27 +1,4 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -35,27 +12,21 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.v2Router = void 0;
 const express_1 = __importDefault(require("express"));
-const dotenv = __importStar(require("dotenv"));
-const db_1 = require("./db");
+const db_1 = require("../../db");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const db_2 = require("./db");
-const middleware_1 = require("./middlewares/middleware");
-const getDate_1 = require("./utils/getDate");
+const db_2 = require("../../db");
+const middleware_1 = require("../../middlewares/middleware");
+const getDate_1 = require("../../utils/getDate");
 const zod_1 = require("zod");
-const cors_1 = __importDefault(require("cors"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
-const randomHash_1 = require("./utils/randomHash");
-const index_1 = require("./routes/v2/index");
+const randomHash_1 = require("../../utils/randomHash");
 const js_client_rest_1 = require("@qdrant/js-client-rest");
 const generative_ai_1 = require("@google/generative-ai");
 const genAI = new generative_ai_1.GoogleGenerativeAI(process.env.GEMINI_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-const app = (0, express_1.default)();
-dotenv.config();
-app.use((0, cors_1.default)());
-app.use(express_1.default.json());
-app.use("/api/v2", index_1.v2Router);
+exports.v2Router = express_1.default.Router();
 const client = new js_client_rest_1.QdrantClient({
     url: process.env.QDRANT_URL,
     apiKey: process.env.QDRANT_KEY,
@@ -70,25 +41,6 @@ const connectVectorDB = () => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 connectVectorDB();
-const createCollection = () => __awaiter(void 0, void 0, void 0, function* () {
-    const collectionName = 'test_collection';
-    const response = yield client.getCollections();
-    const collectionNames = response.collections.map((collection) => collection.name);
-    if (collectionNames.includes(collectionName)) {
-        yield client.deleteCollection(collectionName);
-    }
-    yield client.createCollection(collectionName, {
-        vectors: {
-            size: 768,
-            distance: 'Cosine',
-        },
-        optimizers_config: {
-            default_segment_number: 2,
-        },
-        replication_factor: 2,
-    });
-    console.log('collection created');
-});
 const insertDB = (link) => __awaiter(void 0, void 0, void 0, function* () {
     // Use text-embedding-004 model for generating embeddings
     const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
@@ -118,11 +70,11 @@ const insertDB = (link) => __awaiter(void 0, void 0, void 0, function* () {
         throw error;
     }
 });
-app.get("/", (req, res) => {
+exports.v2Router.get("/", (req, res) => {
     console.log("ROUTE HIT");
     res.send("Hey");
 });
-app.post("/api/v1/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.v2Router.post("/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const requiredBody = zod_1.z.object({
         email: zod_1.z.string().min(11).max(50).email(),
         username: zod_1.z.string().min(5).max(15),
@@ -148,7 +100,7 @@ app.post("/api/v1/signup", (req, res) => __awaiter(void 0, void 0, void 0, funct
         res.status(404).json({ message: "Could not signup", error: err });
     }
 }));
-app.post("/api/v1/signin", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.v2Router.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const username = req.body.username;
     const password = req.body.password;
     let foundUser = null;
@@ -172,7 +124,7 @@ app.post("/api/v1/signin", (req, res) => __awaiter(void 0, void 0, void 0, funct
         res.status(404).json({ message: "Could not sign in", error: err });
     }
 }));
-app.post("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.v2Router.post("/content", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const title = req.body.title;
     const link = req.body.link;
     const type = req.body.type;
@@ -197,7 +149,7 @@ app.post("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter
         res.status(403).json({ message: "Could not create" });
     }
 }));
-app.get("/api/v1/content/home", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.v2Router.get("/content/home", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //@ts-ignore
     const userId = req.userId;
     try {
@@ -208,7 +160,7 @@ app.get("/api/v1/content/home", middleware_1.userMiddleware, (req, res) => __awa
         res.status(403).json({ message: "Could not get content" });
     }
 }));
-app.get("/api/v1/content/:type", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.v2Router.get("/content/:type", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //@ts-ignore
     const userId = req.userId;
     const type = req.params.type;
@@ -220,7 +172,7 @@ app.get("/api/v1/content/:type", middleware_1.userMiddleware, (req, res) => __aw
         res.status(403).json({ message: "Could not get content" });
     }
 }));
-app.delete("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.v2Router.delete("/content", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //@ts-ignore
     const userId = req.userId;
     const contentId = req.body.contentId;
@@ -232,7 +184,7 @@ app.delete("/api/v1/content", middleware_1.userMiddleware, (req, res) => __await
         res.status(403).json({ message: "Could not delete" });
     }
 }));
-app.post("/api/v1/brain/share", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.v2Router.post("/brain/share", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const share = req.body.share;
     //@ts-ignore
     const userId = req.userId;
@@ -256,7 +208,7 @@ app.post("/api/v1/brain/share", middleware_1.userMiddleware, (req, res) => __awa
         res.status(403).json({ message: "Could not update Link" });
     }
 }));
-app.get("/api/v1/brain/:shareLink", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.v2Router.get("/api/v1/brain/:shareLink", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const hash = req.params.shareLink;
     try {
         const link = yield db_1.linkModel.findOne({
@@ -281,7 +233,7 @@ app.get("/api/v1/brain/:shareLink", (req, res) => __awaiter(void 0, void 0, void
         res.status(403).json({ message: "Could not find " });
     }
 }));
-app.post("/api/v1/search", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.v2Router.post("/api/v1/search", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const query = req.body.query;
     const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
     try {
@@ -329,7 +281,3 @@ app.post("/api/v1/search", (req, res) => __awaiter(void 0, void 0, void 0, funct
         });
     }
 }));
-app.listen(3003, () => {
-    console.log("Server Running");
-    console.log(process.env.MONGO_URI, process.env.SECRET_KEY);
-});

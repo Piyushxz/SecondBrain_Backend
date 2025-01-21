@@ -1,15 +1,14 @@
 import express from "express";
-import * as dotenv from "dotenv"
-import { linkModel, UserModel } from "./db";
+import {linkModel,UserModel} from "../../db"
 import jwt from "jsonwebtoken"
-import { contentModel } from "./db";
-import { userMiddleware } from "./middlewares/middleware";
-import { getDate } from "./utils/getDate";
+import { contentModel } from "../../db";
+import { userMiddleware } from "../../middlewares/middleware";
+import { getDate } from "../../utils/getDate";
 import {z} from "zod"
 import cors from "cors"
 import bcrypt from "bcrypt"
-import { random } from "./utils/randomHash";
-import {v2Router} from "./routes/v2/index"
+import { random } from "../../utils/randomHash";
+
 import {QdrantClient} from '@qdrant/js-client-rest'
 import { GoogleGenerativeAI } from "@google/generative-ai";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY);
@@ -17,17 +16,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 
-const app = express()
-
-
-
-
-dotenv.config()
-app.use(cors())
-app.use(express.json())
-
-app.use("/api/v2",v2Router);
-
+export const v2Router = express.Router()
 const client = new QdrantClient({
     url: process.env.QDRANT_URL,
     apiKey: process.env.QDRANT_KEY,
@@ -43,31 +32,7 @@ const connectVectorDB = async()=>{
 }
 connectVectorDB()
 
- const createCollection = async()=>{
-    const collectionName = 'test_collection';
 
-   const response = await client.getCollections();
-
-    const collectionNames = response.collections.map((collection) => collection.name);
-
-    if (collectionNames.includes(collectionName)) {
-         await client.deleteCollection(collectionName);
-    }
-
-     await client.createCollection(collectionName, {
-        vectors: {
-            size: 768,
-             distance: 'Cosine',
-         },
-        optimizers_config: {
-             default_segment_number: 2,
-         },
-         replication_factor: 2,
-     });
-    console.log('collection created')
- }
-
-// createCollection()
 
 interface Link {
     _id:any,
@@ -119,11 +84,11 @@ interface SearchConfig {
 
 
 
-app.get("/",(req,res)=>{
+v2Router.get("/",(req,res)=>{
     console.log("ROUTE HIT")
     res.send("Hey")
 })
-app.post("/api/v1/signup",async (req,res)=>{
+v2Router.post("/signup",async (req,res)=>{
 
 
     const requiredBody = z.object({
@@ -156,7 +121,7 @@ app.post("/api/v1/signup",async (req,res)=>{
     }
 })
 
-app.post("/api/v1/signin",async (req,res)=>{
+v2Router.post("/signin",async (req,res)=>{
     const username = req.body.username;
     const password = req.body.password;
 
@@ -188,7 +153,7 @@ app.post("/api/v1/signin",async (req,res)=>{
     }
 })
 
-app.post("/api/v1/content",userMiddleware, async (req,res)=>{
+v2Router.post("/content",userMiddleware, async (req,res)=>{
     const title = req.body.title;
     const link = req.body.link;
     const type = req.body.type;
@@ -222,7 +187,7 @@ app.post("/api/v1/content",userMiddleware, async (req,res)=>{
 
 })
 
-app.get("/api/v1/content/home",userMiddleware,async (req,res)=>{
+v2Router.get("/content/home",userMiddleware,async (req,res)=>{
     //@ts-ignore
     const userId = req.userId;
     try{
@@ -236,7 +201,7 @@ app.get("/api/v1/content/home",userMiddleware,async (req,res)=>{
     
 })
 
-app.get("/api/v1/content/:type",userMiddleware,async(req,res)=>{
+v2Router.get("/content/:type",userMiddleware,async(req,res)=>{
         //@ts-ignore
         const userId = req.userId;
         const type = req.params.type
@@ -249,7 +214,7 @@ app.get("/api/v1/content/:type",userMiddleware,async(req,res)=>{
         }
 
 })
-app.delete("/api/v1/content",userMiddleware,async (req,res)=>{
+v2Router.delete("/content",userMiddleware,async (req,res)=>{
         //@ts-ignore
         const userId = req.userId;
         const contentId = req.body.contentId;
@@ -267,7 +232,7 @@ app.delete("/api/v1/content",userMiddleware,async (req,res)=>{
         
 })
 
-app.post("/api/v1/brain/share",userMiddleware,async (req,res)=>{
+v2Router.post("/brain/share",userMiddleware,async (req,res)=>{
     const share = req.body.share;
     //@ts-ignore
     const userId = req.userId;
@@ -294,7 +259,7 @@ app.post("/api/v1/brain/share",userMiddleware,async (req,res)=>{
 
 })
 
-app.get("/api/v1/brain/:shareLink",async (req,res)=>{
+v2Router.get("/api/v1/brain/:shareLink",async (req,res)=>{
 
     const hash = req.params.shareLink;
 
@@ -334,7 +299,7 @@ app.get("/api/v1/brain/:shareLink",async (req,res)=>{
 })
 
 
-app.post("/api/v1/search", async (req, res) => {
+v2Router.post("/api/v1/search", async (req, res) => {
     const query = req.body.query;
     const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
 
@@ -390,7 +355,4 @@ app.post("/api/v1/search", async (req, res) => {
     }
 });
 
-app.listen(3003,()=>{
-    console.log("Server Running")
-    console.log(process.env.MONGO_URI,process.env.SECRET_KEY)
-})
+
