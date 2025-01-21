@@ -54,7 +54,6 @@ const app = (0, express_1.default)();
 dotenv.config();
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
-console.log(process.env.GEMINI_KEY, process.env.QDRANT_KEY);
 const client = new js_client_rest_1.QdrantClient({
     url: process.env.QDRANT_URL,
     apiKey: process.env.QDRANT_KEY,
@@ -101,7 +100,8 @@ const insertDB = (link) => __awaiter(void 0, void 0, void 0, function* () {
             payload: {
                 content: link.content,
                 url: link.url,
-                type: link.type, // e.g., "tweet" or "YouTube"
+                type: link.type,
+                description: link.description
             },
         };
         // Upsert the point into the collection
@@ -113,26 +113,6 @@ const insertDB = (link) => __awaiter(void 0, void 0, void 0, function* () {
     }
     catch (error) {
         console.error("Error generating embedding or inserting into database:", error);
-        throw error;
-    }
-});
-const searchDB = (query) => __awaiter(void 0, void 0, void 0, function* () {
-    // Initialize Gemini AI with API key from environment variables
-    // Use text-embedding-004 model for generating embeddings
-    const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
-    try {
-        // Generate embedding for the query
-        const result = yield model.embedContent(query);
-        // Perform vector search in the database
-        const results = yield client.search('test_collection', {
-            vector: result.embedding.values,
-            top: 5, // Retrieve top 5 similar results
-        });
-        // Return the payload of the search results
-        return results.map(result => result.payload);
-    }
-    catch (error) {
-        console.error("Error generating embedding or searching database:", error);
         throw error;
     }
 });
@@ -208,7 +188,7 @@ app.post("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter
             createdAt: (0, getDate_1.getDate)(),
             userId
         });
-        yield insertDB({ _id: parseInt(userId), content: title, url: link, type: type });
+        yield insertDB({ _id: parseInt(userId), content: title, url: link, type: type, description: content });
         res.status(200).json({ message: "Content Added" });
     }
     catch (err) {
@@ -306,18 +286,42 @@ app.post("/api/v1/search", (req, res) => __awaiter(void 0, void 0, void 0, funct
         // Generate embedding for the query
         const result = yield model.embedContent(query);
         // Perform vector search in the database
-        const results = yield client.search('test_collection', {
+        const searchResults = yield client.search('test_collection', {
             vector: result.embedding.values,
-            top: 5,
-            with_payload: true, // Ensure payload is returned
+            limit: 5,
+            with_payload: true,
             with_vector: false
         });
-        // Return the payload of the search results
-        console.log(results);
-        res.status(200).json({ result: results.map(result => result.payload) });
+        console.log("Search result", searchResults);
+        const context = searchResults
+            .map(result => {
+            var _a, _b, _c;
+            return JSON.stringify({
+                content: ((_a = result.payload) === null || _a === void 0 ? void 0 : _a.content) || "No content available",
+                url: ((_b = result.payload) === null || _b === void 0 ? void 0 : _b.url) || "No URL available",
+                description: ((_c = result.payload) === null || _c === void 0 ? void 0 : _c.description) || "No description"
+            });
+        })
+            .join('\n\n');
+        console.log(context);
+        const answerModel = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const prompt = `
+        Context: ${context}\n\n
+        Query: ${query}\n\n
+        Use the context as supportive information, but provide a detailed and well-rounded answer using your general knowledge and reasoning.
+        If no context is found, suggest possible actions the user can take to add or improve their data.
+        `;
+        const answerResult = yield answerModel.generateContent(prompt);
+        const answer = answerResult.response.text();
+        res.status(200).json({
+            query: query,
+            context: context,
+            answer: answer,
+            sources: searchResults.map(result => result.payload)
+        });
     }
     catch (error) {
-        console.error("Error generating embedding or searching database:", error);
+        console.error("Search error:", error);
         res.status(500).json({
             message: "Error performing search",
         });

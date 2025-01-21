@@ -86,7 +86,8 @@ const insertDB = async (link: Link) => {
             payload: {
                 content:link.content,
                 url: link.url,
-                type: link.type, // e.g., "tweet" or "YouTube"
+                type: link.type,
+                description:link.description
             },
         };
 
@@ -111,30 +112,6 @@ interface SearchConfig {
     [key: string]: any; // Allows any additional properties
 }
 
-
-const searchDB = async (query:string) => {
-    
-    // Initialize Gemini AI with API key from environment variables
-    // Use text-embedding-004 model for generating embeddings
-    const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
-
-    try {
-        // Generate embedding for the query
-        const result = await model.embedContent(query);
-        
-        // Perform vector search in the database
-        const results = await client.search('test_collection', {
-            vector: result.embedding.values,
-            top: 5, // Retrieve top 5 similar results
-        }as SearchConfig);
-
-        // Return the payload of the search results
-        return results.map(result => result.payload);
-    } catch (error) {
-        console.error("Error generating embedding or searching database:", error);
-        throw error;
-    }
-};
 
 
 app.get("/",(req,res)=>{
@@ -228,7 +205,7 @@ app.post("/api/v1/content",userMiddleware, async (req,res)=>{
         createdAt:getDate(),
         userId})
 
-        await insertDB({_id:parseInt(userId),content:title,url:link,type:type})
+        await insertDB({_id:parseInt(userId),content:title,url:link,type:type,description:content})
         res.status(200).json({message:"Content Added"})
 
     }catch(err){
@@ -352,34 +329,61 @@ app.get("/api/v1/brain/:shareLink",async (req,res)=>{
 })
 
 
-app.post("/api/v1/search",async(req,res)=>{
-    const query = req.body.query
-
+app.post("/api/v1/search", async (req, res) => {
+    const query = req.body.query;
     const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
 
     try {
         // Generate embedding for the query
         const result = await model.embedContent(query);
-        
-        // Perform vector search in the database
-        const results = await client.search('test_collection', {
-            vector: result.embedding.values,
-            top: 5, 
-            with_payload: true, // Ensure payload is returned
-            with_vector: false
-        }as SearchConfig);
 
-        // Return the payload of the search results
-        console.log(results)
-         res.status(200).json({result:results.map(result => result.payload)});
+
+
+        // Perform vector search in the database
+        const searchResults = await client.search('test_collection', {
+            vector: result.embedding.values,
+            limit: 5,
+            with_payload: true,
+            with_vector: false
+        });
+        console.log("Search result",searchResults)
+ 
+        const context = searchResults
+        .map(result => JSON.stringify({
+            content: result.payload?.content || "No content available",
+            url: result.payload?.url || "No URL available",
+            description:result.payload?.description || "No description"
+        }))
+        .join('\n\n');
+        
+        console.log(context)
+        
+        const answerModel = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const prompt = `
+        Context: ${context}\n\n
+        Query: ${query}\n\n
+        Use the context as supportive information, but provide a detailed and well-rounded answer using your general knowledge and reasoning.
+        If no context is found, suggest possible actions the user can take to add or improve their data.
+        `;
+        const answerResult = await answerModel.generateContent(prompt);
+        const answer = answerResult.response.text();
+
+         res.status(200).json({
+            query: query,
+            context: context,
+            answer: answer,
+            sources: searchResults.map(result => result.payload)
+        });
+
     } catch (error) {
-        console.error("Error generating embedding or searching database:", error);
-             res.status(500).json({ 
+        console.error("Search error:", error);
+         res.status(500).json({ 
             message: "Error performing search", 
+
         });
     }
+});
 
-})
 app.listen(3003,()=>{
     console.log("Server Running")
     console.log(process.env.MONGO_URI,process.env.SECRET_KEY)
