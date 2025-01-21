@@ -16,22 +16,11 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 
-export const v2Router = express.Router()
+ const v2Router = express.Router()
 const client = new QdrantClient({
     url: process.env.QDRANT_URL,
     apiKey: process.env.QDRANT_KEY,
 });
-
-const connectVectorDB = async()=>{
-    try {
-        const result = await client.getCollections();
-        console.log('List of collections:', result.collections);
-    } catch (err) {
-        console.error('Could not get collections:', err);
-    }
-}
-connectVectorDB()
-
 
 
 interface Link {

@@ -9,12 +9,13 @@ import {z} from "zod"
 import cors from "cors"
 import bcrypt from "bcrypt"
 import { random } from "./utils/randomHash";
-import {v2Router} from "./routes/v2/index"
 import {QdrantClient} from '@qdrant/js-client-rest'
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { v4 } from "uuid";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY);
 
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
 
 
 const app = express()
@@ -26,48 +27,14 @@ dotenv.config()
 app.use(cors())
 app.use(express.json())
 
-app.use("/api/v2",v2Router);
 
 const client = new QdrantClient({
     url: process.env.QDRANT_URL,
     apiKey: process.env.QDRANT_KEY,
 });
 
-const connectVectorDB = async()=>{
-    try {
-        const result = await client.getCollections();
-        console.log('List of collections:', result.collections);
-    } catch (err) {
-        console.error('Could not get collections:', err);
-    }
-}
-connectVectorDB()
 
- const createCollection = async()=>{
-    const collectionName = 'test_collection';
 
-   const response = await client.getCollections();
-
-    const collectionNames = response.collections.map((collection) => collection.name);
-
-    if (collectionNames.includes(collectionName)) {
-         await client.deleteCollection(collectionName);
-    }
-
-     await client.createCollection(collectionName, {
-        vectors: {
-            size: 768,
-             distance: 'Cosine',
-         },
-        optimizers_config: {
-             default_segment_number: 2,
-         },
-         replication_factor: 2,
-     });
-    console.log('collection created')
- }
-
-// createCollection()
 
 interface Link {
     _id:any,
@@ -210,7 +177,7 @@ app.post("/api/v1/content",userMiddleware, async (req,res)=>{
         createdAt:getDate(),
         userId})
 
-        await insertDB({_id:parseInt(userId),content:title,url:link,type:type,description:content})
+        await insertDB({_id:v4(),content:title,url:link,type:type,description:content})
         res.status(200).json({message:"Content Added"})
 
     }catch(err){

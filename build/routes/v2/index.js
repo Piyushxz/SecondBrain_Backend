@@ -12,7 +12,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.v2Router = void 0;
 const express_1 = __importDefault(require("express"));
 const db_1 = require("../../db");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
@@ -26,21 +25,11 @@ const js_client_rest_1 = require("@qdrant/js-client-rest");
 const generative_ai_1 = require("@google/generative-ai");
 const genAI = new generative_ai_1.GoogleGenerativeAI(process.env.GEMINI_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-exports.v2Router = express_1.default.Router();
+const v2Router = express_1.default.Router();
 const client = new js_client_rest_1.QdrantClient({
     url: process.env.QDRANT_URL,
     apiKey: process.env.QDRANT_KEY,
 });
-const connectVectorDB = () => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const result = yield client.getCollections();
-        console.log('List of collections:', result.collections);
-    }
-    catch (err) {
-        console.error('Could not get collections:', err);
-    }
-});
-connectVectorDB();
 const insertDB = (link) => __awaiter(void 0, void 0, void 0, function* () {
     // Use text-embedding-004 model for generating embeddings
     const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
@@ -70,11 +59,11 @@ const insertDB = (link) => __awaiter(void 0, void 0, void 0, function* () {
         throw error;
     }
 });
-exports.v2Router.get("/", (req, res) => {
+v2Router.get("/", (req, res) => {
     console.log("ROUTE HIT");
     res.send("Hey");
 });
-exports.v2Router.post("/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+v2Router.post("/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const requiredBody = zod_1.z.object({
         email: zod_1.z.string().min(11).max(50).email(),
         username: zod_1.z.string().min(5).max(15),
@@ -100,7 +89,7 @@ exports.v2Router.post("/signup", (req, res) => __awaiter(void 0, void 0, void 0,
         res.status(404).json({ message: "Could not signup", error: err });
     }
 }));
-exports.v2Router.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+v2Router.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const username = req.body.username;
     const password = req.body.password;
     let foundUser = null;
@@ -124,7 +113,7 @@ exports.v2Router.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0,
         res.status(404).json({ message: "Could not sign in", error: err });
     }
 }));
-exports.v2Router.post("/content", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+v2Router.post("/content", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const title = req.body.title;
     const link = req.body.link;
     const type = req.body.type;
@@ -149,7 +138,7 @@ exports.v2Router.post("/content", middleware_1.userMiddleware, (req, res) => __a
         res.status(403).json({ message: "Could not create" });
     }
 }));
-exports.v2Router.get("/content/home", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+v2Router.get("/content/home", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //@ts-ignore
     const userId = req.userId;
     try {
@@ -160,7 +149,7 @@ exports.v2Router.get("/content/home", middleware_1.userMiddleware, (req, res) =>
         res.status(403).json({ message: "Could not get content" });
     }
 }));
-exports.v2Router.get("/content/:type", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+v2Router.get("/content/:type", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //@ts-ignore
     const userId = req.userId;
     const type = req.params.type;
@@ -172,7 +161,7 @@ exports.v2Router.get("/content/:type", middleware_1.userMiddleware, (req, res) =
         res.status(403).json({ message: "Could not get content" });
     }
 }));
-exports.v2Router.delete("/content", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+v2Router.delete("/content", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //@ts-ignore
     const userId = req.userId;
     const contentId = req.body.contentId;
@@ -184,7 +173,7 @@ exports.v2Router.delete("/content", middleware_1.userMiddleware, (req, res) => _
         res.status(403).json({ message: "Could not delete" });
     }
 }));
-exports.v2Router.post("/brain/share", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+v2Router.post("/brain/share", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const share = req.body.share;
     //@ts-ignore
     const userId = req.userId;
@@ -208,7 +197,7 @@ exports.v2Router.post("/brain/share", middleware_1.userMiddleware, (req, res) =>
         res.status(403).json({ message: "Could not update Link" });
     }
 }));
-exports.v2Router.get("/api/v1/brain/:shareLink", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+v2Router.get("/api/v1/brain/:shareLink", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const hash = req.params.shareLink;
     try {
         const link = yield db_1.linkModel.findOne({
@@ -233,7 +222,7 @@ exports.v2Router.get("/api/v1/brain/:shareLink", (req, res) => __awaiter(void 0,
         res.status(403).json({ message: "Could not find " });
     }
 }));
-exports.v2Router.post("/api/v1/search", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+v2Router.post("/api/v1/search", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const query = req.body.query;
     const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
     try {

@@ -46,48 +46,18 @@ const zod_1 = require("zod");
 const cors_1 = __importDefault(require("cors"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const randomHash_1 = require("./utils/randomHash");
-const index_1 = require("./routes/v2/index");
 const js_client_rest_1 = require("@qdrant/js-client-rest");
 const generative_ai_1 = require("@google/generative-ai");
+const uuid_1 = require("uuid");
 const genAI = new generative_ai_1.GoogleGenerativeAI(process.env.GEMINI_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 const app = (0, express_1.default)();
 dotenv.config();
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
-app.use("/api/v2", index_1.v2Router);
 const client = new js_client_rest_1.QdrantClient({
     url: process.env.QDRANT_URL,
     apiKey: process.env.QDRANT_KEY,
-});
-const connectVectorDB = () => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const result = yield client.getCollections();
-        console.log('List of collections:', result.collections);
-    }
-    catch (err) {
-        console.error('Could not get collections:', err);
-    }
-});
-connectVectorDB();
-const createCollection = () => __awaiter(void 0, void 0, void 0, function* () {
-    const collectionName = 'test_collection';
-    const response = yield client.getCollections();
-    const collectionNames = response.collections.map((collection) => collection.name);
-    if (collectionNames.includes(collectionName)) {
-        yield client.deleteCollection(collectionName);
-    }
-    yield client.createCollection(collectionName, {
-        vectors: {
-            size: 768,
-            distance: 'Cosine',
-        },
-        optimizers_config: {
-            default_segment_number: 2,
-        },
-        replication_factor: 2,
-    });
-    console.log('collection created');
 });
 const insertDB = (link) => __awaiter(void 0, void 0, void 0, function* () {
     // Use text-embedding-004 model for generating embeddings
@@ -190,7 +160,7 @@ app.post("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter
             createdAt: (0, getDate_1.getDate)(),
             userId
         });
-        yield insertDB({ _id: parseInt(userId), content: title, url: link, type: type, description: content });
+        yield insertDB({ _id: (0, uuid_1.v4)(), content: title, url: link, type: type, description: content });
         res.status(200).json({ message: "Content Added" });
     }
     catch (err) {
