@@ -44,22 +44,23 @@ interface Link {
     content:string
 }
 const insertDB = async (link: Link) => {
-    // Use text-embedding-004 model for generating embeddings
     const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
 
     try {
-        // Generate embedding for the link content
-        const result = await model.embedContent([link.content,link.url]);
-        
+        // Generate a unique ID for the point
+
+        // Generate embedding for the content and URL
+        const result = await model.embedContent([link.content, link.url]);
+
         // Create the point data for insertion
         const point = {
-            id: link._id,
+            id: link._id, // Use a unique ID for the vector
             vector: result.embedding.values,
             payload: {
-                content:link.content,
+                content: link.content,
                 url: link.url,
                 type: link.type,
-                description:link.description
+                description: link.description,
             },
         };
 
@@ -68,11 +69,9 @@ const insertDB = async (link: Link) => {
             wait: true,
             points: [point], // Pass the point as an array
         });
-        console.log("Insert into QdrantDB")
+        console.log("Inserted into QdrantDB");
 
-    
     } catch (error) {
-
         console.error("Error generating embedding or inserting into database:", error);
         throw error;
     }
@@ -162,7 +161,7 @@ app.post("/api/v1/content",userMiddleware, async (req,res)=>{
     const content = req.body.content;
     
      const tags = [...req.body.tags]
-
+    const unqID = v4()
     //@ts-ignore
     const userId = req.userId;
 
@@ -177,7 +176,7 @@ app.post("/api/v1/content",userMiddleware, async (req,res)=>{
         createdAt:getDate(),
         userId})
 
-        await insertDB({_id:v4(),content:title,url:link,type:type,description:content})
+        await insertDB({_id:unqID,content:title,url:link,type:type,description:content})
         res.status(200).json({message:"Content Added"})
 
     }catch(err){

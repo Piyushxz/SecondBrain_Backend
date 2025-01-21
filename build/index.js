@@ -60,20 +60,20 @@ const client = new js_client_rest_1.QdrantClient({
     apiKey: process.env.QDRANT_KEY,
 });
 const insertDB = (link) => __awaiter(void 0, void 0, void 0, function* () {
-    // Use text-embedding-004 model for generating embeddings
     const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
     try {
-        // Generate embedding for the link content
+        // Generate a unique ID for the point
+        // Generate embedding for the content and URL
         const result = yield model.embedContent([link.content, link.url]);
         // Create the point data for insertion
         const point = {
-            id: link._id,
+            id: link._id, // Use a unique ID for the vector
             vector: result.embedding.values,
             payload: {
                 content: link.content,
                 url: link.url,
                 type: link.type,
-                description: link.description
+                description: link.description,
             },
         };
         // Upsert the point into the collection
@@ -81,7 +81,7 @@ const insertDB = (link) => __awaiter(void 0, void 0, void 0, function* () {
             wait: true,
             points: [point], // Pass the point as an array
         });
-        console.log("Insert into QdrantDB");
+        console.log("Inserted into QdrantDB");
     }
     catch (error) {
         console.error("Error generating embedding or inserting into database:", error);
@@ -148,6 +148,7 @@ app.post("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter
     const type = req.body.type;
     const content = req.body.content;
     const tags = [...req.body.tags];
+    const unqID = (0, uuid_1.v4)();
     //@ts-ignore
     const userId = req.userId;
     try {
@@ -160,7 +161,7 @@ app.post("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter
             createdAt: (0, getDate_1.getDate)(),
             userId
         });
-        yield insertDB({ _id: (0, uuid_1.v4)(), content: title, url: link, type: type, description: content });
+        yield insertDB({ _id: unqID, content: title, url: link, type: type, description: content });
         res.status(200).json({ message: "Content Added" });
     }
     catch (err) {
