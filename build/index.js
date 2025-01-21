@@ -299,6 +299,30 @@ app.get("/api/v1/brain/:shareLink", (req, res) => __awaiter(void 0, void 0, void
         res.status(403).json({ message: "Could not find " });
     }
 }));
+app.post("/api/v1/search", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const query = req.body.query;
+    const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
+    try {
+        // Generate embedding for the query
+        const result = yield model.embedContent(query);
+        // Perform vector search in the database
+        const results = yield client.search('test_collection', {
+            vector: result.embedding.values,
+            top: 5,
+            with_payload: true, // Ensure payload is returned
+            with_vector: false
+        });
+        // Return the payload of the search results
+        console.log(results);
+        res.status(200).json({ result: results.map(result => result.payload) });
+    }
+    catch (error) {
+        console.error("Error generating embedding or searching database:", error);
+        res.status(500).json({
+            message: "Error performing search",
+        });
+    }
+}));
 app.listen(3003, () => {
     console.log("Server Running");
     console.log(process.env.MONGO_URI, process.env.SECRET_KEY);
