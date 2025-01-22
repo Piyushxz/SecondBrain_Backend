@@ -52,7 +52,10 @@ const insertDB = async (link: Link) => {
 
         const parsedURLContent = await getYouTubeVideoDetails(link.url);
 
-        const result = await model.embedContent([link.content, link.url,JSON.stringify(parsedURLContent)]);
+        if(!parsedURLContent){
+            return;
+        }
+        const result = await model.embedContent([link.content, link.url,JSON.stringify(parsedURLContent),link.type]);
 
         // Create the point data for insertion
         const point = {
@@ -63,6 +66,7 @@ const insertDB = async (link: Link) => {
                 url: link.url,
                 type: link.type,
                 description: link.description,
+                parsedContent:JSON.stringify(parsedURLContent)
             },
         };
 
@@ -315,7 +319,7 @@ app.post("/api/v1/search", async (req, res) => {
         // Perform vector search in the database
         const searchResults = await client.search('test_collection', {
             vector: result.embedding.values,
-            limit: 5,
+            limit: 1,
             with_payload: true,
             with_vector: false
         });
@@ -326,7 +330,8 @@ app.post("/api/v1/search", async (req, res) => {
         .map(result => JSON.stringify({
             content: result.payload?.content || "No content available",
             description:result.payload?.description || "No description",
-            url: result.payload?.url || "No URL available"
+            url: result.payload?.url || "No URL available",
+            parsedContent:result.payload?.parsedContent ||"No parsed content"
             
         }))
         .join('\n\n');
@@ -364,3 +369,4 @@ app.listen(3003,()=>{
     console.log("Server Running")
     console.log(process.env.MONGO_URI,process.env.SECRET_KEY)
 })
+

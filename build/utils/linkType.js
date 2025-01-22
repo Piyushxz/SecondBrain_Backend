@@ -39,7 +39,7 @@ const getYouTubeVideoDetails = (videoLink) => __awaiter(void 0, void 0, void 0, 
     try {
         const youtube = googleapis_1.google.youtube({
             version: "v3",
-            auth: "AIzaSyDWicQlGLATs21SNbJeafSm-litjsFck74", // Replace with your API Key
+            auth: process.env.YT_API, // Replace with your API Key
         });
         // Get the video details
         //@ts-ignore
@@ -59,7 +59,7 @@ const getYouTubeVideoDetails = (videoLink) => __awaiter(void 0, void 0, void 0, 
                 channelTitle: (videoDetails === null || videoDetails === void 0 ? void 0 : videoDetails.channelTitle) || "No Channel Title",
             };
             console.log(videoMetadata);
-            return videoMetadata;
+            return { videoMetadata };
         }
         else {
             console.error("Video not found.");

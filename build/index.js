@@ -64,8 +64,11 @@ const insertDB = (link) => __awaiter(void 0, void 0, void 0, function* () {
     const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
     try {
         // Generate a unique ID for the point
-        // Generate embedding for the content and URL
-        const result = yield model.embedContent([link.content, link.url]);
+        const parsedURLContent = yield (0, linkType_1.getYouTubeVideoDetails)(link.url);
+        if (!parsedURLContent) {
+            return;
+        }
+        const result = yield model.embedContent([link.content, link.url, JSON.stringify(parsedURLContent), link.type]);
         // Create the point data for insertion
         const point = {
             id: link._id, // Use a unique ID for the vector
@@ -75,6 +78,7 @@ const insertDB = (link) => __awaiter(void 0, void 0, void 0, function* () {
                 url: link.url,
                 type: link.type,
                 description: link.description,
+                parsedContent: JSON.stringify(parsedURLContent)
             },
         };
         // Upsert the point into the collection
@@ -262,18 +266,19 @@ app.post("/api/v1/search", (req, res) => __awaiter(void 0, void 0, void 0, funct
         // Perform vector search in the database
         const searchResults = yield client.search('test_collection', {
             vector: result.embedding.values,
-            limit: 5,
+            limit: 1,
             with_payload: true,
             with_vector: false
         });
         console.log("Search result", searchResults);
         const context = searchResults
             .map(result => {
-            var _a, _b, _c;
+            var _a, _b, _c, _d;
             return JSON.stringify({
                 content: ((_a = result.payload) === null || _a === void 0 ? void 0 : _a.content) || "No content available",
                 description: ((_b = result.payload) === null || _b === void 0 ? void 0 : _b.description) || "No description",
-                url: ((_c = result.payload) === null || _c === void 0 ? void 0 : _c.url) || "No URL available"
+                url: ((_c = result.payload) === null || _c === void 0 ? void 0 : _c.url) || "No URL available",
+                parsedContent: ((_d = result.payload) === null || _d === void 0 ? void 0 : _d.parsedContent) || "No parsed content"
             });
         })
             .join('\n\n');
@@ -301,7 +306,6 @@ app.post("/api/v1/search", (req, res) => __awaiter(void 0, void 0, void 0, funct
         });
     }
 }));
-(0, linkType_1.getYouTubeVideoDetails)("https://youtu.be/G8RSvdTNLIM?si=bB3qBFDeah2x7pmw");
 app.listen(3003, () => {
     console.log("Server Running");
     console.log(process.env.MONGO_URI, process.env.SECRET_KEY);
