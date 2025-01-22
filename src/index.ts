@@ -10,6 +10,7 @@ import cors from "cors"
 import bcrypt from "bcrypt"
 import { random } from "./utils/randomHash";
 import {QdrantClient} from '@qdrant/js-client-rest'
+import { getYouTubeVideoDetails } from "./utils/linkType";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { v4 } from "uuid";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY);
@@ -323,8 +324,9 @@ app.post("/api/v1/search", async (req, res) => {
         const context = searchResults
         .map(result => JSON.stringify({
             content: result.payload?.content || "No content available",
-            url: result.payload?.url || "No URL available",
-            description:result.payload?.description || "No description"
+            description:result.payload?.description || "No description",
+            url: result.payload?.url || "No URL available"
+            
         }))
         .join('\n\n');
         
@@ -355,6 +357,8 @@ app.post("/api/v1/search", async (req, res) => {
         });
     }
 });
+
+getYouTubeVideoDetails("https://youtu.be/G8RSvdTNLIM?si=bB3qBFDeah2x7pmw");
 
 app.listen(3003,()=>{
     console.log("Server Running")

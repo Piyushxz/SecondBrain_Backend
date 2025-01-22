@@ -8,33 +8,65 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getYouTubeTranscript = void 0;
-const puppeteer_1 = __importDefault(require("puppeteer"));
-const getYouTubeTranscript = (url) => __awaiter(void 0, void 0, void 0, function* () {
-    const browser = yield puppeteer_1.default.launch();
-    const page = yield browser.newPage();
-    yield page.goto(url);
-    try {
-        // Extract transcript text
-        const transcript = yield page.evaluate(() => {
-            // Cast elements to HTMLElement to access innerText
-            const transcriptElements = document.querySelectorAll(".your-selector"); // Replace with the actual selector
-            return Array.from(transcriptElements)
-                .map(el => el.innerText) // Cast Element to HTMLElement
-                .join(" ");
-        });
-        yield browser.close();
-        console.log(transcript);
-        return transcript;
+exports.getYouTubeVideoDetails = void 0;
+const googleapis_1 = require("googleapis");
+const youtubeURLtoID = (url) => {
+    const urlObj = new URL(url);
+    let videoId;
+    if (urlObj.hostname.includes('youtube.com') && urlObj.searchParams.has('v')) {
+        videoId = urlObj.searchParams.get('v');
     }
-    catch (err) {
-        console.error("Error fetching transcript:");
-        yield browser.close();
-        throw err;
+    else if (urlObj.hostname === 'youtu.be') {
+        videoId = urlObj.pathname.slice(1); // Remove leading '/'
+    }
+    else if (urlObj.pathname.startsWith('/embed/')) {
+        videoId = urlObj.pathname.split('/embed/')[1];
+    }
+    if (videoId && videoId.length === 11) {
+        return videoId;
+    }
+    else {
+        return null;
+    }
+};
+const getYouTubeVideoDetails = (videoLink) => __awaiter(void 0, void 0, void 0, function* () {
+    const videoId = youtubeURLtoID(videoLink);
+    if (videoId === null) {
+        console.log("Invalid Video Link");
+        return;
+    }
+    try {
+        const youtube = googleapis_1.google.youtube({
+            version: "v3",
+            auth: "AIzaSyDWicQlGLATs21SNbJeafSm-litjsFck74", // Replace with your API Key
+        });
+        // Get the video details
+        //@ts-ignore
+        const response = yield youtube.videos.list({
+            part: ["snippet"], // Specify parts as an array of strings
+            id: videoId,
+        });
+        // Check if the response contains valid data
+        //@ts-ignore
+        const items = response.data.items;
+        if (items && items.length > 0) {
+            const videoDetails = items[0].snippet;
+            const videoMetadata = {
+                title: (videoDetails === null || videoDetails === void 0 ? void 0 : videoDetails.title) || "No Title",
+                description: (videoDetails === null || videoDetails === void 0 ? void 0 : videoDetails.description) || "No Description",
+                publishedAt: (videoDetails === null || videoDetails === void 0 ? void 0 : videoDetails.publishedAt) || "No Publish Date",
+                channelTitle: (videoDetails === null || videoDetails === void 0 ? void 0 : videoDetails.channelTitle) || "No Channel Title",
+            };
+            console.log(videoMetadata);
+            return videoMetadata;
+        }
+        else {
+            console.error("Video not found.");
+        }
+    }
+    catch (error) {
+        console.error("Error fetching video details:", error);
     }
 });
-exports.getYouTubeTranscript = getYouTubeTranscript;
+exports.getYouTubeVideoDetails = getYouTubeVideoDetails;

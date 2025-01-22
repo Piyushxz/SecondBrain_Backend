@@ -47,6 +47,7 @@ const cors_1 = __importDefault(require("cors"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const randomHash_1 = require("./utils/randomHash");
 const js_client_rest_1 = require("@qdrant/js-client-rest");
+const linkType_1 = require("./utils/linkType");
 const generative_ai_1 = require("@google/generative-ai");
 const uuid_1 = require("uuid");
 const genAI = new generative_ai_1.GoogleGenerativeAI(process.env.GEMINI_KEY);
@@ -271,8 +272,8 @@ app.post("/api/v1/search", (req, res) => __awaiter(void 0, void 0, void 0, funct
             var _a, _b, _c;
             return JSON.stringify({
                 content: ((_a = result.payload) === null || _a === void 0 ? void 0 : _a.content) || "No content available",
-                url: ((_b = result.payload) === null || _b === void 0 ? void 0 : _b.url) || "No URL available",
-                description: ((_c = result.payload) === null || _c === void 0 ? void 0 : _c.description) || "No description"
+                description: ((_b = result.payload) === null || _b === void 0 ? void 0 : _b.description) || "No description",
+                url: ((_c = result.payload) === null || _c === void 0 ? void 0 : _c.url) || "No URL available"
             });
         })
             .join('\n\n');
@@ -300,6 +301,7 @@ app.post("/api/v1/search", (req, res) => __awaiter(void 0, void 0, void 0, funct
         });
     }
 }));
+(0, linkType_1.getYouTubeVideoDetails)("https://youtu.be/G8RSvdTNLIM?si=bB3qBFDeah2x7pmw");
 app.listen(3003, () => {
     console.log("Server Running");
     console.log(process.env.MONGO_URI, process.env.SECRET_KEY);
