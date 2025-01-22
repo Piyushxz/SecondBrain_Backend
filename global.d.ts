@@ -5,7 +5,8 @@ namespace NodeJS {
       MONGO_URI: string;
       GEMINI_KEY:string,
       QDRANT_KEY:string,
-      QDRANT_URL:string
+      QDRANT_URL:string,
+      YT_API:string
     }
   }
   

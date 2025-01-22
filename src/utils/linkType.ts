@@ -30,7 +30,7 @@ export const getYouTubeVideoDetails = async (videoLink: string) => {
     try {
         const youtube = google.youtube({
             version: "v3",
-            auth: "AIzaSyDWicQlGLATs21SNbJeafSm-litjsFck74", // Replace with your API Key
+            auth: process.env.YT_API, // Replace with your API Key
         });
 
         // Get the video details
@@ -53,7 +53,7 @@ export const getYouTubeVideoDetails = async (videoLink: string) => {
             };
 
             console.log(videoMetadata);
-            return videoMetadata;
+            return {videoMetadata};
         } else {
             console.error("Video not found.");
         }

@@ -50,8 +50,9 @@ const insertDB = async (link: Link) => {
     try {
         // Generate a unique ID for the point
 
-        // Generate embedding for the content and URL
-        const result = await model.embedContent([link.content, link.url]);
+        const parsedURLContent = await getYouTubeVideoDetails(link.url);
+
+        const result = await model.embedContent([link.content, link.url,JSON.stringify(parsedURLContent)]);
 
         // Create the point data for insertion
         const point = {
@@ -358,7 +359,6 @@ app.post("/api/v1/search", async (req, res) => {
     }
 });
 
-getYouTubeVideoDetails("https://youtu.be/G8RSvdTNLIM?si=bB3qBFDeah2x7pmw");
 
 app.listen(3003,()=>{
     console.log("Server Running")
