@@ -52,6 +52,7 @@ const generative_ai_1 = require("@google/generative-ai");
 const uuid_1 = require("uuid");
 const tweetParse_1 = require("./utils/tweetParse");
 const checkURLtype_1 = __importDefault(require("./utils/checkURLtype"));
+const parseWebsiteData_1 = require("./utils/parseWebsiteData");
 const genAI = new generative_ai_1.GoogleGenerativeAI(process.env.GEMINI_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 const app = (0, express_1.default)();
@@ -75,7 +76,8 @@ const insertDB = (link) => __awaiter(void 0, void 0, void 0, function* () {
         else if (linkType === `tweet`) {
             parsedURLContent = yield (0, tweetParse_1.getTweetDetails)(link.url);
         }
-        else {
+        else if (linkType === 'link') {
+            parsedURLContent = yield (0, parseWebsiteData_1.getWebsiteMetadata)(link.url);
         }
         console.log(parsedURLContent);
         if (!parsedURLContent) {
@@ -88,6 +90,7 @@ const insertDB = (link) => __awaiter(void 0, void 0, void 0, function* () {
             vector: result.embedding.values,
             payload: {
                 content: link.content,
+                userId: link.userId,
                 url: link.url,
                 type: link.type,
                 description: link.description,
@@ -179,7 +182,7 @@ app.post("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter
             createdAt: (0, getDate_1.getDate)(),
             userId
         });
-        yield insertDB({ _id: unqID, content: title, url: link, type: type, description: content });
+        yield insertDB({ _id: unqID, content: title, url: link, type: type, description: content, userId: userId });
         res.status(200).json({ message: "Content Added" });
     }
     catch (err) {
@@ -278,9 +281,15 @@ app.post("/api/v1/search", middleware_1.userMiddleware, (req, res) => __awaiter(
     try {
         // Generate embedding for the query
         const result = yield model.embedContent(query);
+        const filter = {
+            must: [
+                { key: "userId", match: { value: userId } } // Adjust this structure to match your database's requirements
+            ]
+        };
         // Perform vector search in the database
         const searchResults = yield client.search('test_collection', {
             vector: result.embedding.values,
+            filter: filter,
             limit: 3,
             with_payload: true,
             with_vector: false

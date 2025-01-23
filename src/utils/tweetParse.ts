@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const twitterBearerToken = "AAAAAAAAAAAAAAAAAAAAAKW2yQEAAAAAX5jUg0f5aHdBefFGNUpQ2hxYlTQ%3DmHlU2oDWgSTtf5p0eTpQkvb1J35CKpsALVvuqwMuiFOduU2elU"; // Replace with your actual Bearer Token
+const twitterBearerToken = process.env.TWEET_BEARER
 
 const extractTweetID = (url: string): string | null => {
     const match = url.match(/status\/(\d+)/);

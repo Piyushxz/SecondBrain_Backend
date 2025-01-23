@@ -15,6 +15,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { v4 } from "uuid";
 import { getTweetDetails } from "./utils/tweetParse";
 import checkLinkType from "./utils/checkURLtype";
+import { get } from "mongoose";
+import { getWebsiteMetadata } from "./utils/parseWebsiteData";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY);
 
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
@@ -45,7 +47,8 @@ interface Link {
     url:string,
     type:string,
     description?:string,
-    content:string
+    content:string,
+    userId:string
 }
 const insertDB = async (link: Link) => {
     const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
@@ -62,8 +65,8 @@ const insertDB = async (link: Link) => {
         }else if(linkType === `tweet`){
             parsedURLContent = await getTweetDetails(link.url)
         }
-        else{
-
+        else if(linkType === 'link'){
+            parsedURLContent = await getWebsiteMetadata(link.url)
         }
 
         console.log(parsedURLContent)
@@ -78,6 +81,7 @@ const insertDB = async (link: Link) => {
             vector: result.embedding.values,
             payload: {
                 content: link.content,
+                userId:link.userId,
                 url: link.url,
                 type: link.type,
                 description: link.description,
@@ -197,7 +201,7 @@ app.post("/api/v1/content",userMiddleware, async (req,res)=>{
         createdAt:getDate(),
         userId})
 
-        await insertDB({_id:unqID,content:title,url:link,type:type,description:content})
+        await insertDB({_id:unqID,content:title,url:link,type:type,description:content,userId:userId})
         res.status(200).json({message:"Content Added"})
 
     }catch(err){
@@ -329,12 +333,17 @@ app.post("/api/v1/search",userMiddleware, async (req, res) => {
     try {
         // Generate embedding for the query
         const result = await model.embedContent(query);
-
+        const filter = {
+            must: [
+                { key: "userId", match: { value: userId } } // Adjust this structure to match your database's requirements
+            ]
+        };
 
 
         // Perform vector search in the database
         const searchResults = await client.search('test_collection', {
             vector: result.embedding.values,
+            filter:filter,
             limit: 3,
             with_payload: true,
             with_vector: false
@@ -380,7 +389,12 @@ app.post("/api/v1/search",userMiddleware, async (req, res) => {
     }
 });
 
+
+
+
 app.listen(3003,()=>{
+
+
     console.log("Server Running")
     console.log(process.env.MONGO_URI,process.env.SECRET_KEY)
 })

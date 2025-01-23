@@ -14,7 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getTweetDetails = void 0;
 const axios_1 = __importDefault(require("axios"));
-const twitterBearerToken = "AAAAAAAAAAAAAAAAAAAAAKW2yQEAAAAAX5jUg0f5aHdBefFGNUpQ2hxYlTQ%3DmHlU2oDWgSTtf5p0eTpQkvb1J35CKpsALVvuqwMuiFOduU2elU"; // Replace with your actual Bearer Token
+const twitterBearerToken = process.env.TWEET_BEARER;
 const extractTweetID = (url) => {
     const match = url.match(/status\/(\d+)/);
     return match ? match[1] : null;

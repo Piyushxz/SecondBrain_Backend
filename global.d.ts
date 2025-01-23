@@ -6,7 +6,8 @@ namespace NodeJS {
       GEMINI_KEY:string,
       QDRANT_KEY:string,
       QDRANT_URL:string,
-      YT_API:string
+      YT_API:string,
+      TWEET_BEARER:string
     }
   }
   
