@@ -50,6 +50,8 @@ const js_client_rest_1 = require("@qdrant/js-client-rest");
 const linkType_1 = require("./utils/linkType");
 const generative_ai_1 = require("@google/generative-ai");
 const uuid_1 = require("uuid");
+const tweetParse_1 = require("./utils/tweetParse");
+const checkURLtype_1 = __importDefault(require("./utils/checkURLtype"));
 const genAI = new generative_ai_1.GoogleGenerativeAI(process.env.GEMINI_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 const app = (0, express_1.default)();
@@ -64,9 +66,20 @@ const insertDB = (link) => __awaiter(void 0, void 0, void 0, function* () {
     const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
     try {
         // Generate a unique ID for the point
-        const parsedURLContent = yield (0, linkType_1.getYouTubeVideoDetails)(link.url);
+        const linkType = (0, checkURLtype_1.default)(link.url);
+        console.log(link.url);
+        let parsedURLContent = null;
+        if (linkType === `youtube`) {
+            parsedURLContent = yield (0, linkType_1.getYouTubeVideoDetails)(link.url);
+        }
+        else if (linkType === `tweet`) {
+            parsedURLContent = yield (0, tweetParse_1.getTweetDetails)(link.url);
+        }
+        else {
+        }
+        console.log(parsedURLContent);
         if (!parsedURLContent) {
-            return;
+            parsedURLContent = 'no parsed data';
         }
         const result = yield model.embedContent([link.content, link.url, JSON.stringify(parsedURLContent), link.type]);
         // Create the point data for insertion
@@ -257,16 +270,18 @@ app.get("/api/v1/brain/:shareLink", (req, res) => __awaiter(void 0, void 0, void
         res.status(403).json({ message: "Could not find " });
     }
 }));
-app.post("/api/v1/search", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+app.post("/api/v1/search", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const query = req.body.query;
     const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
+    //@ts-ignore
+    const userId = req.userId;
     try {
         // Generate embedding for the query
         const result = yield model.embedContent(query);
         // Perform vector search in the database
         const searchResults = yield client.search('test_collection', {
             vector: result.embedding.values,
-            limit: 1,
+            limit: 3,
             with_payload: true,
             with_vector: false
         });

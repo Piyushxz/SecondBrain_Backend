@@ -1,10 +1,10 @@
-function checkLinkType(url: string): string {
+export default function checkLinkType(url: string): string {
     if (isYouTubeUrl(url)) {
-        return `YouTube Video: ${url}`;
+        return `youtube`;
     } else if (isTweetUrl(url)) {
-        return `Tweet: ${url}`;
+        return `tweet`;
     } else {
-        return `Website: ${url}`;
+        return `link`;
     }
 }
 
@@ -14,6 +14,6 @@ function isYouTubeUrl(url: string): boolean {
 }
 
 function isTweetUrl(url: string): boolean {
-    const tweetRegex = /^(https:\/\/(?:www\.)?twitter\.com\/(?:.*\/)*status\/\d+)/;
+    const tweetRegex = /^(https:\/\/(?:www\.)?(?:twitter\.com|x\.com)\/(?:.*\/)*status\/\d+)/;
     return tweetRegex.test(url);
 }

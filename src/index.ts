@@ -13,6 +13,8 @@ import {QdrantClient} from '@qdrant/js-client-rest'
 import { getYouTubeVideoDetails } from "./utils/linkType";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { v4 } from "uuid";
+import { getTweetDetails } from "./utils/tweetParse";
+import checkLinkType from "./utils/checkURLtype";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY);
 
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
@@ -27,6 +29,7 @@ const app = express()
 dotenv.config()
 app.use(cors())
 app.use(express.json())
+
 
 
 const client = new QdrantClient({
@@ -50,10 +53,22 @@ const insertDB = async (link: Link) => {
     try {
         // Generate a unique ID for the point
 
-        const parsedURLContent = await getYouTubeVideoDetails(link.url);
+        const linkType = checkLinkType(link.url)
+        console.log(link.url)
+        let parsedURLContent=null;
+        if(linkType===`youtube`){
+            parsedURLContent = await getYouTubeVideoDetails(link.url);
 
+        }else if(linkType === `tweet`){
+            parsedURLContent = await getTweetDetails(link.url)
+        }
+        else{
+
+        }
+
+        console.log(parsedURLContent)
         if(!parsedURLContent){
-            return;
+            parsedURLContent = 'no parsed data'
         }
         const result = await model.embedContent([link.content, link.url,JSON.stringify(parsedURLContent),link.type]);
 
@@ -306,10 +321,11 @@ app.get("/api/v1/brain/:shareLink",async (req,res)=>{
 })
 
 
-app.post("/api/v1/search", async (req, res) => {
+app.post("/api/v1/search",userMiddleware, async (req, res) => {
     const query = req.body.query;
     const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
-
+        //@ts-ignore
+        const userId = req.userId;
     try {
         // Generate embedding for the query
         const result = await model.embedContent(query);
@@ -319,7 +335,7 @@ app.post("/api/v1/search", async (req, res) => {
         // Perform vector search in the database
         const searchResults = await client.search('test_collection', {
             vector: result.embedding.values,
-            limit: 1,
+            limit: 3,
             with_payload: true,
             with_vector: false
         });
@@ -363,7 +379,6 @@ app.post("/api/v1/search", async (req, res) => {
         });
     }
 });
-
 
 app.listen(3003,()=>{
     console.log("Server Running")
