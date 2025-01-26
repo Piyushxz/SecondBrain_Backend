@@ -15,8 +15,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { v4 } from "uuid";
 import { getTweetDetails } from "./utils/tweetParse";
 import checkLinkType from "./utils/checkURLtype";
-import { get } from "mongoose";
 import { getWebsiteMetadata } from "./utils/parseWebsiteData";
+import { Types } from "mongoose";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY);
 
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
@@ -48,7 +48,8 @@ interface Link {
     type:string,
     description?:string,
     content:string,
-    userId:string
+    userId:string,
+    contentId:Types.ObjectId
 }
 const insertDB = async (link: Link) => {
     const model = genAI.getGenerativeModel({ model: "text-embedding-004" });
@@ -80,6 +81,7 @@ const insertDB = async (link: Link) => {
             id: link._id, // Use a unique ID for the vector
             vector: result.embedding.values,
             payload: {
+                contentId:link.contentId,
                 content: link.content,
                 userId:link.userId,
                 url: link.url,
@@ -154,7 +156,7 @@ app.post("/api/v1/signin",async (req,res)=>{
    
     let foundUser = null;
     try{
-        foundUser = await UserModel.findOne({username})
+        foundUser = await UserModel.findOne({username,password})
 
         if(!foundUser){
             res.status(401).json({message:"User does not exist"})
@@ -164,7 +166,7 @@ app.post("/api/v1/signin",async (req,res)=>{
         const encryptedPass = await bcrypt.compare(password,foundUser.password)
         if(encryptedPass){
             const token = jwt.sign({id:foundUser._id},process.env.SECRET_KEY);
-            res.status(200).json({message:"Signed IN!",token})
+            res.status(200).json({message:"Signed IN!",token,username:foundUser.username})
             
         }else{
 
@@ -191,7 +193,7 @@ app.post("/api/v1/content",userMiddleware, async (req,res)=>{
     const userId = req.userId;
 
     try{
-        await contentModel.create({
+        const data = await contentModel.create({
         title,
         link,
         type,
@@ -201,7 +203,8 @@ app.post("/api/v1/content",userMiddleware, async (req,res)=>{
         createdAt:getDate(),
         userId})
 
-        await insertDB({_id:unqID,content:title,url:link,type:type,description:content,userId:userId})
+        await insertDB({_id:unqID,content:title,url:link,type:type,description:content,userId:userId,contentId:data._id})
+        console.log(JSON.stringify(data._id))
         res.status(200).json({message:"Content Added"})
 
     }catch(err){
@@ -245,10 +248,18 @@ app.delete("/api/v1/content",userMiddleware,async (req,res)=>{
         const userId = req.userId;
         const contentId = req.body.contentId;
 
+        const filter = {
+            must: [
+                { key: "contentId", match: { value: contentId } } 
+            ]
+        };
 
         try{
 
             await contentModel.deleteOne({_id:contentId,userId:userId})
+            await client.delete('test_collection',{
+                filter:filter
+            })
             res.status(200).json({message:"Delted Successfully!"})
 
         }catch(err){
@@ -331,16 +342,14 @@ app.post("/api/v1/search",userMiddleware, async (req, res) => {
         //@ts-ignore
         const userId = req.userId;
     try {
-        // Generate embedding for the query
         const result = await model.embedContent(query);
         const filter = {
             must: [
-                { key: "userId", match: { value: userId } } // Adjust this structure to match your database's requirements
+                { key: "userId", match: { value: userId } } 
             ]
         };
 
 
-        // Perform vector search in the database
         const searchResults = await client.search('test_collection', {
             vector: result.embedding.values,
             filter:filter,

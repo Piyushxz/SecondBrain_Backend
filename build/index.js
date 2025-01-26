@@ -89,6 +89,7 @@ const insertDB = (link) => __awaiter(void 0, void 0, void 0, function* () {
             id: link._id, // Use a unique ID for the vector
             vector: result.embedding.values,
             payload: {
+                contentId: link.contentId,
                 content: link.content,
                 userId: link.userId,
                 url: link.url,
@@ -144,7 +145,7 @@ app.post("/api/v1/signin", (req, res) => __awaiter(void 0, void 0, void 0, funct
     const password = req.body.password;
     let foundUser = null;
     try {
-        foundUser = yield db_1.UserModel.findOne({ username });
+        foundUser = yield db_1.UserModel.findOne({ username, password });
         if (!foundUser) {
             res.status(401).json({ message: "User does not exist" });
             return;
@@ -153,7 +154,7 @@ app.post("/api/v1/signin", (req, res) => __awaiter(void 0, void 0, void 0, funct
         const encryptedPass = yield bcrypt_1.default.compare(password, foundUser.password);
         if (encryptedPass) {
             const token = jsonwebtoken_1.default.sign({ id: foundUser._id }, process.env.SECRET_KEY);
-            res.status(200).json({ message: "Signed IN!", token });
+            res.status(200).json({ message: "Signed IN!", token, username: foundUser.username });
         }
         else {
             res.status(403).json({ message: "Invalid credentials" });
@@ -173,7 +174,7 @@ app.post("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter
     //@ts-ignore
     const userId = req.userId;
     try {
-        yield db_2.contentModel.create({
+        const data = yield db_2.contentModel.create({
             title,
             link,
             type,
@@ -182,7 +183,8 @@ app.post("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter
             createdAt: (0, getDate_1.getDate)(),
             userId
         });
-        yield insertDB({ _id: unqID, content: title, url: link, type: type, description: content, userId: userId });
+        yield insertDB({ _id: unqID, content: title, url: link, type: type, description: content, userId: userId, contentId: data._id });
+        console.log(JSON.stringify(data._id));
         res.status(200).json({ message: "Content Added" });
     }
     catch (err) {
@@ -216,8 +218,16 @@ app.delete("/api/v1/content", middleware_1.userMiddleware, (req, res) => __await
     //@ts-ignore
     const userId = req.userId;
     const contentId = req.body.contentId;
+    const filter = {
+        must: [
+            { key: "contentId", match: { value: contentId } }
+        ]
+    };
     try {
         yield db_2.contentModel.deleteOne({ _id: contentId, userId: userId });
+        yield client.delete('test_collection', {
+            filter: filter
+        });
         res.status(200).json({ message: "Delted Successfully!" });
     }
     catch (err) {
@@ -279,14 +289,12 @@ app.post("/api/v1/search", middleware_1.userMiddleware, (req, res) => __awaiter(
     //@ts-ignore
     const userId = req.userId;
     try {
-        // Generate embedding for the query
         const result = yield model.embedContent(query);
         const filter = {
             must: [
-                { key: "userId", match: { value: userId } } // Adjust this structure to match your database's requirements
+                { key: "userId", match: { value: userId } }
             ]
         };
-        // Perform vector search in the database
         const searchResults = yield client.search('test_collection', {
             vector: result.embedding.values,
             filter: filter,
