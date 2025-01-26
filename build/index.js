@@ -145,7 +145,7 @@ app.post("/api/v1/signin", (req, res) => __awaiter(void 0, void 0, void 0, funct
     const password = req.body.password;
     let foundUser = null;
     try {
-        foundUser = yield db_1.UserModel.findOne({ username, password });
+        foundUser = yield db_1.UserModel.findOne({ username });
         if (!foundUser) {
             res.status(401).json({ message: "User does not exist" });
             return;
