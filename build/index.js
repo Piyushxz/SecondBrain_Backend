@@ -53,6 +53,7 @@ const uuid_1 = require("uuid");
 const tweetParse_1 = require("./utils/tweetParse");
 const checkURLtype_1 = __importDefault(require("./utils/checkURLtype"));
 const parseWebsiteData_1 = require("./utils/parseWebsiteData");
+const mongoose_1 = require("mongoose");
 const genAI = new generative_ai_1.GoogleGenerativeAI(process.env.GEMINI_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 const app = (0, express_1.default)();
@@ -218,7 +219,8 @@ app.get("/api/v1/content/:type", middleware_1.userMiddleware, (req, res) => __aw
 app.delete("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //@ts-ignore
     const userId = req.userId;
-    const contentId = req.body.contentId;
+    let contentId = req.body.contentId;
+    contentId = new mongoose_1.Types.ObjectId(req.body.contentId);
     const filter = {
         must: [
             { key: "contentId", match: { value: contentId } }
@@ -233,6 +235,7 @@ app.delete("/api/v1/content", middleware_1.userMiddleware, (req, res) => __await
     }
     catch (err) {
         res.status(403).json({ message: "Could not delete" });
+        console.log(err);
     }
 }));
 app.post("/api/v1/brain/share", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {

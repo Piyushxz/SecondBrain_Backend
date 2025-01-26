@@ -17,6 +17,7 @@ import { getTweetDetails } from "./utils/tweetParse";
 import checkLinkType from "./utils/checkURLtype";
 import { getWebsiteMetadata } from "./utils/parseWebsiteData";
 import { Types } from "mongoose";
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_KEY);
 
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
@@ -247,7 +248,8 @@ app.get("/api/v1/content/:type",userMiddleware,async(req,res)=>{
 app.delete("/api/v1/content",userMiddleware,async (req,res)=>{
         //@ts-ignore
         const userId = req.userId;
-        const contentId = req.body.contentId;
+        let contentId = req.body.contentId;
+        contentId = new Types.ObjectId(req.body.contentId);
 
         const filter = {
             must: [
@@ -265,6 +267,7 @@ app.delete("/api/v1/content",userMiddleware,async (req,res)=>{
 
         }catch(err){
             res.status(403).json({message:"Could not delete"})
+            console.log(err)
         }
 
         
