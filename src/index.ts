@@ -156,7 +156,7 @@ app.post("/api/v1/signin",async (req,res)=>{
    
     let foundUser = null;
     try{
-        foundUser = await UserModel.findOne({username,password})
+        foundUser = await UserModel.findOne({username})
 
         if(!foundUser){
             res.status(401).json({message:"User does not exist"})
@@ -203,6 +203,7 @@ app.post("/api/v1/content",userMiddleware, async (req,res)=>{
         createdAt:getDate(),
         userId})
 
+        console.log({_id:unqID,content:title,url:link,type:type,description:content,userId:userId,contentId:data._id})
         await insertDB({_id:unqID,content:title,url:link,type:type,description:content,userId:userId,contentId:data._id})
         console.log(JSON.stringify(data._id))
         res.status(200).json({message:"Content Added"})

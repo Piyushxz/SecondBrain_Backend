@@ -183,6 +183,7 @@ app.post("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter
             createdAt: (0, getDate_1.getDate)(),
             userId
         });
+        console.log({ _id: unqID, content: title, url: link, type: type, description: content, userId: userId, contentId: data._id });
         yield insertDB({ _id: unqID, content: title, url: link, type: type, description: content, userId: userId, contentId: data._id });
         console.log(JSON.stringify(data._id));
         res.status(200).json({ message: "Content Added" });
