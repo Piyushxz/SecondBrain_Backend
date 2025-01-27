@@ -58,7 +58,12 @@ const genAI = new generative_ai_1.GoogleGenerativeAI(process.env.GEMINI_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 const app = (0, express_1.default)();
 dotenv.config();
-app.use((0, cors_1.default)());
+const corsOptions = {
+    origin: "https://second-brain-frontend-64sr.vercel.app",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+};
+app.use((0, cors_1.default)(corsOptions));
 app.use(express_1.default.json());
 const client = new js_client_rest_1.QdrantClient({
     url: process.env.QDRANT_URL,

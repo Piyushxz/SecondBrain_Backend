@@ -30,7 +30,12 @@ const app = express()
 
 
 dotenv.config()
-app.use(cors())
+const corsOptions = {
+    origin: "https://second-brain-frontend-64sr.vercel.app",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+};
+app.use(cors(corsOptions));
 app.use(express.json())
 
 
