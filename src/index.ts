@@ -36,6 +36,8 @@ const corsOptions = {
     credentials: true,
 };
 app.use(cors(corsOptions));
+app.options("*", cors());
+
 app.use(express.json())
 
 
@@ -273,6 +275,7 @@ app.delete("/api/v1/content",userMiddleware,async (req,res)=>{
                 filter:filter
             })
             res.status(200).json({message:"Delted Successfully!"})
+            console.log(contentId,"deleted")
 
         }catch(err){
             res.status(403).json({message:"Could not delete"})

@@ -241,6 +241,7 @@ app.delete("/api/v1/content", middleware_1.userMiddleware, (req, res) => __await
             filter: filter
         });
         res.status(200).json({ message: "Delted Successfully!" });
+        console.log(contentId, "deleted");
     }
     catch (err) {
         res.status(403).json({ message: "Could not delete" });
