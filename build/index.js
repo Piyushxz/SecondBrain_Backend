@@ -58,12 +58,8 @@ const genAI = new generative_ai_1.GoogleGenerativeAI(process.env.GEMINI_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 const app = (0, express_1.default)();
 dotenv.config();
-const corsOptions = {
-    origin: "https://second-brain-frontend-64sr.vercel.app",
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true,
-};
-app.use((0, cors_1.default)(corsOptions));
+app.use((0, cors_1.default)());
+app.options("*", (0, cors_1.default)());
 app.use(express_1.default.json());
 const client = new js_client_rest_1.QdrantClient({
     url: process.env.QDRANT_URL,
@@ -225,6 +221,10 @@ app.delete("/api/v1/content", middleware_1.userMiddleware, (req, res) => __await
     //@ts-ignore
     const userId = req.userId;
     let contentId = req.body.contentId;
+    if (!contentId || !mongoose_1.Types.ObjectId.isValid(contentId)) {
+        res.status(400).json({ message: "Invalid or missing contentId" });
+        return;
+    }
     contentId = new mongoose_1.Types.ObjectId(req.body.contentId);
     if (!contentId || !mongoose_1.Types.ObjectId.isValid(contentId)) {
         res.status(400).json({ message: "Invalid or missing contentId" });

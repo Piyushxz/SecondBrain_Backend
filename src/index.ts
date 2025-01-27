@@ -30,12 +30,8 @@ const app = express()
 
 
 dotenv.config()
-const corsOptions = {
-    origin: "https://second-brain-frontend-64sr.vercel.app",
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true,
-};
-app.use(cors(corsOptions));
+
+app.use(cors());
 app.options("*", cors());
 
 app.use(express.json())
@@ -256,6 +252,11 @@ app.delete("/api/v1/content",userMiddleware,async (req,res)=>{
         //@ts-ignore
         const userId = req.userId;
         let contentId = req.body.contentId;
+        if (!contentId || !Types.ObjectId.isValid(contentId)) {
+             res.status(400).json({ message: "Invalid or missing contentId" });
+             return;
+          }
+          
         contentId = new Types.ObjectId(req.body.contentId);
 
         if (!contentId || !Types.ObjectId.isValid(contentId)) {
