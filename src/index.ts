@@ -251,6 +251,10 @@ app.delete("/api/v1/content",userMiddleware,async (req,res)=>{
         let contentId = req.body.contentId;
         contentId = new Types.ObjectId(req.body.contentId);
 
+        if (!contentId || !Types.ObjectId.isValid(contentId)) {
+             res.status(400).json({ message: "Invalid or missing contentId" });
+             return;
+        }
         const filter = {
             must: [
                 { key: "contentId", match: { value: contentId } } 
