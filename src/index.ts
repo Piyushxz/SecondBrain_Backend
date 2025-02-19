@@ -370,7 +370,7 @@ app.post("/api/v1/search",userMiddleware, async (req, res) => {
         const searchResults = await client.search('test_collection', {
             vector: result.embedding.values,
             filter:filter,
-            limit: 3,
+            limit: 2,
             with_payload: true,
             with_vector: false
         });
@@ -387,14 +387,28 @@ app.post("/api/v1/search",userMiddleware, async (req, res) => {
         }))
         .join('\n\n');
         
-        console.log(context)
+        console.log("context",context)
         
         const answerModel = genAI.getGenerativeModel({ model: "gemini-pro" });
         const prompt = `
-        Context: ${context}\n\n
-        Query: ${query}\n\n
-        Use the context as supportive information, but provide a detailed and well-rounded answer using your general knowledge and reasoning.
-        If no context is found, suggest possible actions the user can take to add or improve their data.
+        You are an AI assistant with access to relevant documents. Your goal is to provide a well-rounded, detailed response to the user's query using the provided context. 
+        
+        ### Context Details:
+        Each search result includes parsed content, a description, and a URL. The parsed content contains the most detailed information, so prioritize it in your response. If parsed content is missing, use other details like description or content.
+        
+        ### Context:
+        ${context}
+        
+        ### Query:
+        ${query}
+        
+        ### Instructions:
+        1. Focus on the **parsed content** as the primary source of information.
+        2. If parsed content is insufficient, refer to the description or general content.
+        3. Provide a structured and informative response.
+        4. If no useful context is available, suggest possible actions for the user to improve their data.
+        
+        Respond accurately and concisely.
         `;
         const answerResult = await answerModel.generateContent(prompt);
         const answer = answerResult.response.text();
