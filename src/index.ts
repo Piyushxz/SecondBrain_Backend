@@ -403,7 +403,7 @@ app.post("/api/v1/search",userMiddleware, async (req, res) => {
         ${query}
         
         ### Instructions:
-        1. Focus on the **parsed content** as the primary source of information.
+        1. Focus on the **parsed content and description** as the primary source of information.
         2. If parsed content is insufficient, refer to the description or general content.
         3. Provide a structured and informative response.
         4. If no useful context is available, suggest possible actions for the user to improve their data.
