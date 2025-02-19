@@ -370,7 +370,7 @@ app.post("/api/v1/search",userMiddleware, async (req, res) => {
         const searchResults = await client.search('test_collection', {
             vector: result.embedding.values,
             filter:filter,
-            limit: 2,
+            limit: 1,
             with_payload: true,
             with_vector: false
         });
